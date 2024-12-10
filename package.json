@@ -1,0 +1,19 @@
+{
+  "name": "@lblod/template-export-service",
+  "version": "0.0.0",
+  "description": "Microservice which allows for exporting and importing say-editor templates and snippets",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lblod/template-export-service.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lblod/template-export-service/issues"
+  },
+  "homepage": "https://github.com/lblod/template-export-service#readme"
+}
