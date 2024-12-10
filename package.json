@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/lblod/template-export-service/issues"
   },
-  "homepage": "https://github.com/lblod/template-export-service#readme"
+  "homepage": "https://github.com/lblod/template-export-service#readme",
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.10",
+    "changesets-release-it-plugin": "^0.1.2",
+    "release-it": "^16.3.0"
+  }
 }
