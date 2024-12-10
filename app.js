@@ -1,3 +1,4 @@
+// @ts-ignore
 import { app } from 'mu';
 
 app.get('/hello', function( req, res ) {
