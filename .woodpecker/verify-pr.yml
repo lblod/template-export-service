@@ -1,0 +1,16 @@
+steps:
+  install:
+    image: node:20-alpine
+    commands:
+      - npm i
+      # Our lockfile is incompatible with the version of npm used with node:14. The old scripts just
+      # `npm i`, so we do that. We should update to a sane node version and change this.
+      # - npm ci
+  lint-js:
+    image: node:20-alpine
+    group: lint
+    commands:
+      - npm run lint:js
+when:
+  event:
+    - pull_request
