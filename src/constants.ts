@@ -5,3 +5,5 @@ export enum JOB_STATUSES {
   FAILED = 'http://redpencil.data.gift/id/concept/JobStatus/failed',
   CANCELED = 'http://redpencil.data.gift/id/concept/JobStatus/canceled',
 }
+
+export const ALLOWED_USER_GROUPS = ['org-wf'];
