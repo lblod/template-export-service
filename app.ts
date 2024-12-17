@@ -1,7 +1,7 @@
-import { validateUser } from './src/middleware';
+import { app } from 'mu';
+import { errorHandler, validateUser } from './src/middleware';
 import { NextFunction, Response, Request } from 'express';
 import bodyParser from 'body-parser';
-import { app } from 'mu';
 
 app.use(
   bodyParser.json({
@@ -10,3 +10,15 @@ app.use(
 );
 
 app.use(validateUser);
+app.use(function (
+  err: Error,
+  req: Request,
+  res: Response,
+  _next: NextFunction
+) {
+  errorHandler(err, res);
+});
+
+process.on('uncaughtException', (err) => {
+  errorHandler(err);
+});

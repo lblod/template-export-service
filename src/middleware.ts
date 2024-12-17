@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
-import AppError from './utils/app-error';
+import AppError, { isOperational } from './utils/app-error';
 import { StatusCodes } from 'http-status-codes';
 import { ALLOWED_USER_GROUPS } from './constants';
+import { logger } from './support/logger';
+
 export const validateUser = (
   req: Request,
   _res: Response,
@@ -24,4 +26,22 @@ export const validateUser = (
     next(unAuthorizedError);
   }
   next();
+};
+
+export const errorHandler = (error: Error, res?: Response) => {
+  logger.error(error);
+  if (!isOperational(error)) {
+    if (res && !res.headersSent) {
+      res.status(500).json({ errors: [{ title: 'An unknown error occured' }] });
+    }
+    process.exit(1);
+  }
+
+  if (res && !res.headersSent) {
+    const statusCode =
+      error instanceof AppError && error.statusCode
+        ? error.statusCode
+        : StatusCodes.INTERNAL_SERVER_ERROR;
+    res.status(statusCode).json({ errors: [{ title: error.message }] });
+  }
 };
