@@ -1,6 +1,7 @@
 import { app } from 'mu';
 import { errorHandler, validateUser } from './src/middleware';
 import { NextFunction, Response, Request } from 'express';
+import router from './src/router';
 import bodyParser from 'body-parser';
 
 app.use(
@@ -10,6 +11,9 @@ app.use(
 );
 
 app.use(validateUser);
+
+app.use(router);
+
 app.use(function (
   err: Error,
   req: Request,
