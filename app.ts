@@ -1,5 +1,8 @@
+import bodyParser from 'body-parser';
 import { app } from 'mu';
 
-app.get('/hello', function (req, res) {
-  res.send('Hello mu-javascript-template');
-});
+app.use(
+  bodyParser.json({
+    limit: '50mb',
+  })
+);
