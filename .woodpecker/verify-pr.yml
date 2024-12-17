@@ -11,6 +11,11 @@ steps:
     group: lint
     commands:
       - npm run lint:js
+  lint-types:
+    image: node:20-alpine
+    group: lint
+    commands:
+      - npm run lint:types
 when:
   event:
     - pull_request
