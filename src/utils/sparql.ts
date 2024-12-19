@@ -1,15 +1,11 @@
-type Binding = Record<
-  string,
-  {
-    value: string;
-    type: string;
-  }
->;
+import { BindingObject, ObjectToBind } from 'mu';
 
-export function objectify(binding: Binding) {
-  const result: Record<string, string> = {};
-  Object.entries(binding).forEach(([key, term]) => {
-    result[key] = term.value;
-  });
-  return result;
+export function objectify<Obj extends ObjectToBind>(
+  binding: BindingObject<Obj>
+) {
+  return Object.fromEntries(
+    Object.entries(binding).map(([key, term]) => [key, term.value])
+    // TS doesn't give us 'keyof' from Object.entries() as a subclass could have extra fields,
+    // making this technically not true, but for us we don't care as we'll put it through zod
+  ) as { [Prop in keyof Obj]: string };
 }

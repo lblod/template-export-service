@@ -10,7 +10,7 @@ import { Optional } from '../utils/types';
 import { findEditorDocument } from './editor-document';
 
 export async function findDocumentContainer(uri: string) {
-  const response = await query(/* sparql */ `
+  const response = await query<DocumentContainer>(/* sparql */ `
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX pav: <http://purl.org/pav/>
@@ -49,11 +49,11 @@ export async function findDocumentContainer(uri: string) {
     );
   }
   const data = objectify(response.results.bindings[0]);
-  const documentContainer = {
+  const documentContainer: DocumentContainer = {
     ...data,
     linkedSnippetListUris: data.linkedSnippetListUris
       ? new Set(data.linkedSnippetListUris.split('|'))
-      : new Set(),
+      : new Set<string>(),
   };
   return DocumentContainerSchema.parse(documentContainer);
 }

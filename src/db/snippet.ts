@@ -3,7 +3,6 @@ import {
   sparqlEscapeInt,
   sparqlEscapeString,
   sparqlEscapeUri,
-  SparqlResponse,
   update,
   uuid,
 } from 'mu';
@@ -11,10 +10,10 @@ import AppError from '../utils/app-error';
 import { StatusCodes } from 'http-status-codes';
 import { objectify } from '../utils/sparql';
 import { Optional } from '../utils/types';
-import { Snippet, SnippetSchema } from '../schemas/snippet';
+import { Snippet, SnippetInput, SnippetSchema } from '../schemas/snippet';
 
 export async function findSnippet(uri: string) {
-  const response: SparqlResponse = await query(/* sparql */ `
+  const response = await query<Snippet>(/* sparql */ `
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX pav: <http://purl.org/pav/>
@@ -57,7 +56,7 @@ export async function findSnippet(uri: string) {
     );
   }
   const data = objectify(response.results.bindings[0]);
-  const snippet = {
+  const snippet: SnippetInput = {
     ...data,
     linkedSnippetListUris: data.linkedSnippetListUris
       ? new Set(data.linkedSnippetListUris.split('|'))

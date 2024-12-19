@@ -3,7 +3,6 @@ import {
   sparqlEscapeDateTime,
   sparqlEscapeString,
   sparqlEscapeUri,
-  SparqlResponse,
   update,
   uuid,
 } from 'mu';
@@ -12,12 +11,13 @@ import { StatusCodes } from 'http-status-codes';
 import { objectify } from '../utils/sparql';
 import {
   EditorDocument,
+  EditorDocumentInput,
   EditorDocumentSchema,
 } from '../schemas/editor-document';
 import { Optional } from '../utils/types';
 
 export async function findEditorDocument(uri: string) {
-  const response: SparqlResponse = await query(/* sparql */ `
+  const response = await query<EditorDocument>(/* sparql */ `
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX pav: <http://purl.org/pav/>
@@ -50,7 +50,10 @@ export async function findEditorDocument(uri: string) {
       `Expected to only find a single result when querying EditorDocument ${uri} `
     );
   }
-  return EditorDocumentSchema.parse(objectify(response.results.bindings[0]));
+  const editorDocument: EditorDocumentInput = objectify(
+    response.results.bindings[0]
+  );
+  return EditorDocumentSchema.parse(editorDocument);
 }
 
 export async function createEditorDocument(

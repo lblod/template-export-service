@@ -3,7 +3,6 @@ import {
   sparqlEscapeDateTime,
   sparqlEscapeString,
   sparqlEscapeUri,
-  SparqlResponse,
   update,
   uuid,
 } from 'mu';
@@ -13,12 +12,13 @@ import { objectify } from '../utils/sparql';
 import { Optional } from '../utils/types';
 import {
   SnippetVersion,
+  SnippetVersionInput,
   SnippetVersionSchema,
 } from '../schemas/snippet-version';
 import { findSnippet } from './snippet';
 
 export async function findSnippetVersion(uri: string) {
-  const response: SparqlResponse = await query(/* sparql */ `
+  const response = await query<SnippetVersion>(/* sparql */ `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX pav: <http://purl.org/pav/>
       PREFIX dct: <http://purl.org/dc/terms/>
@@ -61,13 +61,7 @@ export async function findSnippetVersion(uri: string) {
       `Expected to only find a single result when querying SnippetVersion ${uri} `
     );
   }
-  const data = objectify(response.results.bindings[0]);
-  const snippet = {
-    ...data,
-    linkedSnippetUris: data.linkedSnippetListUris
-      ? new Set(data.linkedSnippetListUris.split('|'))
-      : new Set(),
-  };
+  const snippet: SnippetVersionInput = objectify(response.results.bindings[0]);
   return SnippetVersionSchema.parse(snippet);
 }
 

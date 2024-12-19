@@ -1,23 +1,40 @@
 declare module 'mu' {
-  import { Express, NextFunction } from 'express';
+  import { Express, RequestHandler } from 'express';
 
-  export type SparqlResponse = {
-    head: {
-      vars: string[];
-    };
-    results: {
-      bindings: Record<
-        string,
-        {
-          type: string;
-          value: string;
-        }
-      >[];
+  export type ObjectToBind = Record<string, unknown>;
+  export type BindingObject<Obj extends ObjectToBind = ObjectToBind> = {
+    [Prop in keyof Obj]: {
+      type: string;
+      value: string;
     };
   };
 
+  export type SparqlResponse<
+    ObjOrIsAsk extends ObjectToBind | true = ObjectToBind,
+  > = ObjOrIsAsk extends ObjectToBind
+    ? {
+        head: {
+          vars: string[];
+        };
+        results: {
+          bindings: BindingObject<ObjOrIsAsk>[];
+        };
+      }
+    : {
+        head: unknown;
+        boolean: boolean;
+      };
+
   export const app: Express;
-  export const query: (query: string) => Promise<SparqlResponse>;
+  /**
+   * The parameter ObjOrIsAsk should be the type of an object which the returned data will be passed
+   * in to. This allows TS to give us a return value that has the same keys mapped to Binding
+   * objects. If this is an ASK query, pass `true` instead as the return of this query will be
+   * different.
+   */
+  export const query: <ObjOrIsAsk extends ObjectToBind | true = ObjectToBind>(
+    query: string
+  ) => Promise<SparqlResponse<ObjOrIsAsk>>;
   export const update: (query: string) => Promise<void>;
   export const uuid: () => string;
   export const sparqlEscape: (value: unknown, type: string) => string;
@@ -29,12 +46,7 @@ declare module 'mu' {
   export const sparqlEscapeDateTime: (value: Date) => string;
   export const sparqlEscapeBool: (value: boolean) => string;
   export const sparqlEscapeDate: (value: Date) => string;
-  export const errorHandler: (
-    error: Error,
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => void;
+  export const errorHandler: RequestHandler;
   // this is a tagged template string function
   export const sparql: (
     strings: TemplateStringsArray,
