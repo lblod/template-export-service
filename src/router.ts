@@ -12,13 +12,26 @@ import { createJobError } from './db/job-error';
 
 const router = Router();
 
+interface ExportBody {
+  documentContainerUris: string;
+  snippetListUris: string;
+}
+interface ParsedExportBody {
+  parsedBody: {
+    documentContainerUris: string[];
+    snippetListUris: string[];
+  };
+}
+
 const validateExportBody = (
-  req: Request,
-  res: Response,
+  req: Request<unknown, unknown, ExportBody, unknown, ParsedExportBody>,
+  res: Response<unknown, ParsedExportBody>,
   next: NextFunction
 ) => {
   if (!req.body) {
-    next(new AppError(StatusCodes.BAD_REQUEST, 'Request is missing a body'));
+    return next(
+      new AppError(StatusCodes.BAD_REQUEST, 'Request is missing a body')
+    );
   }
   let documentContainerUris: string[] | undefined;
   try {
@@ -26,9 +39,9 @@ const validateExportBody = (
       .array(z.string())
       .optional()
       .parse(req.body.documentContainerUris);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
-    next(
+    logger.warn('Document Container URIs do not look like URIs', e);
+    return next(
       new AppError(
         StatusCodes.BAD_REQUEST,
         `'documentContainerUris' property of request body is malformed`
@@ -41,9 +54,9 @@ const validateExportBody = (
       .array(z.string())
       .optional()
       .parse(req.body.snippetListUris);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
-    next(
+    logger.warn('Snippet List URIs do not look like URIs', e);
+    return next(
       new AppError(
         StatusCodes.BAD_REQUEST,
         `'snippetListUris' property of request body is malformed`
@@ -51,7 +64,7 @@ const validateExportBody = (
     );
   }
   if (!documentContainerUris && !snippetListUris) {
-    next(
+    return next(
       new AppError(
         StatusCodes.BAD_REQUEST,
         `the 'snippetListUris' and 'documentContainerUris' request body properties may not be both undefined`
@@ -67,8 +80,7 @@ const validateExportBody = (
 };
 
 router.post('/export', validateExportBody, async function (_req, res, next) {
-  const documentContainerUris = res.locals.parsedBody
-    .documentContainerUris as string[];
+  const documentContainerUris = res.locals.parsedBody.documentContainerUris;
   const snippetListUris = res.locals.parsedBody.snippetListUris as string[];
 
   const task = await createTask({
@@ -76,13 +88,15 @@ router.post('/export', validateExportBody, async function (_req, res, next) {
     statusUri: JOB_STATUSES.SCHEDULED,
   });
   res.status(201).json({
-    id: task.id,
-    attributes: {
-      uri: task.uri,
-      createdOn: task.createdOn,
-      updatedOn: task.updatedOn,
-      status: task.statusUri,
-      operation: task.operationUri,
+    data: {
+      id: task.id,
+      attributes: {
+        uri: task.uri,
+        createdOn: task.createdOn,
+        updatedOn: task.updatedOn,
+        status: task.statusUri,
+        operation: task.operationUri,
+      },
     },
   });
 
@@ -105,11 +119,13 @@ router.post('/export', validateExportBody, async function (_req, res, next) {
       task.errorUri = jobError.uri;
       await updateTask(task.uri, task);
     } else {
-      next(e);
+      return next(e);
     }
   }
 
   logger.debug(JSON.stringify(resourcesToExport));
+  task.statusUri = JOB_STATUSES.SUCCESS;
+  await updateTask(task.uri, task);
 });
 
 router.post('/import', function (_req, _res, _next) {});

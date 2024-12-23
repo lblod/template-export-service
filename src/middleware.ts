@@ -14,7 +14,7 @@ export const validateUser = (
     "You don't have the correct access rights to access this endpoint"
   );
   if (!req.get('mu-auth-allowed-groups')) {
-    next(unAuthorizedError);
+    return next(unAuthorizedError);
   }
   const allowedGroups: Record<string, string>[] = JSON.parse(
     req.get('mu-auth-allowed-groups') as string
@@ -23,7 +23,7 @@ export const validateUser = (
     ALLOWED_USER_GROUPS.includes(group.name)
   );
   if (!match) {
-    next(unAuthorizedError);
+    return next(unAuthorizedError);
   }
   next();
 };
