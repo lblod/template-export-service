@@ -1,14 +1,13 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import AppError, { isError, isOperational } from './utils/app-error';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
+import AppError, { isError, isOperational } from './utils/app-error';
 import { logger } from './support/logger';
-import { collectResourcesToExport } from './actions/export';
-import { DocumentContainer } from './schemas/document-container';
-import { SnippetList } from './schemas/snippet-list';
-import { createTask, updateTask } from './db/task';
+import { collectResourcesToExport, Export } from './actions/export';
+import { addResultToTask, createTask, updateTask } from './db/task';
 import { JOB_STATUSES } from './constants';
 import { createJobError } from './db/job-error';
+import { createZip } from './support/file-support';
 
 const router = Router();
 
@@ -75,7 +74,7 @@ const validateExportBody = (
     documentContainerUris: documentContainerUris ?? [],
     snippetListUris: snippetListUris ?? [],
   };
-  logger.debug(res.locals.parsedBody);
+  logger.debug('Received export request body', res.locals.parsedBody);
   next();
 };
 
@@ -102,10 +101,7 @@ router.post('/export', validateExportBody, async function (_req, res, next) {
 
   task.statusUri = JOB_STATUSES.BUSY;
   await updateTask(task.uri, task);
-  let resourcesToExport!: {
-    documentContainers: DocumentContainer[];
-    snippetLists: SnippetList[];
-  };
+  let resourcesToExport: Export;
 
   try {
     resourcesToExport = await collectResourcesToExport({
@@ -123,9 +119,10 @@ router.post('/export', validateExportBody, async function (_req, res, next) {
     }
   }
 
-  logger.debug(JSON.stringify(resourcesToExport));
-  task.statusUri = JOB_STATUSES.SUCCESS;
-  await updateTask(task.uri, task);
+  logger.debug('Exporting resources', resourcesToExport!);
+  const { logicalFileUri } = await createZip(resourcesToExport!);
+  await addResultToTask(task.uri, { logicalFileUri });
+  // TODO error handling
 });
 
 router.post('/import', function (_req, _res, _next) {});

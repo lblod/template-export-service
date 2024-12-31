@@ -108,8 +108,8 @@ export async function createSnippetList(
   };
 }
 
-export async function findSnippetListWithSnippets(uri: string) {
-  const snippetList = await findSnippetList(uri);
+export async function findSnippetListWithSnippets(listUri: string) {
+  const snippetList = await findSnippetList(listUri);
   const snippets = await Promise.all(
     [...snippetList.snippetUris].map(async (uri) => {
       const snippet = await findSnippet(uri);
