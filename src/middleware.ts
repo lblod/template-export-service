@@ -29,12 +29,16 @@ export const validateUser = (
 };
 
 export const errorHandler = (error: Error, res?: Response) => {
-  logger.error(error);
+  logger.error('Handling uncaught error in route', error);
   if (!isOperational(error)) {
     if (res && !res.headersSent) {
       res.status(500).json({ errors: [{ title: 'An unknown error occured' }] });
     }
-    process.exit(1);
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    } else {
+      logger.error('Process not ending in development mode');
+    }
   }
 
   if (res && !res.headersSent) {

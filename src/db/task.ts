@@ -11,7 +11,7 @@ import { Optional } from '../utils/types';
 import { Task } from '../schemas/task';
 import { ResultsContainer } from '../schemas/results-container';
 import { JOB_STATUSES } from '../constants';
-import { logger } from './support/logger';
+import { logger } from '../support/logger';
 
 export async function createTask(data: Optional<Task, 'id' | 'uri'>) {
   const id: string = data.id ?? uuid();
@@ -106,7 +106,7 @@ export async function addResultToTask(
   data: Optional<ResultsContainer, 'id' | 'uri'>
 ) {
   const id = data.id ?? uuid();
-  const uri = data.uri ?? `http://data.lblod.info/document-containers/${id}`;
+  const uri = data.uri ?? `http://data.lblod.info/archive/${id}`;
   logger.debug('Setting result on task', { task: taskUri, data });
   await update(/* sparql */ `
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -114,7 +114,12 @@ export async function addResultToTask(
       PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
       PREFIX adms: <http://www.w3.org/ns/adms#>
       PREFIX dct: <http://purl.org/dc/terms/>
-      INSERT DATA {
+      DELETE {
+        ${sparqlEscapeUri(taskUri)}
+          adms:status ?statusUri;
+          dct:modified ?updatedOn.
+      }
+      INSERT {
         ${sparqlEscapeUri(uri)}
           a nfo:DataContainer;
           a nfo:Archive;
@@ -124,5 +129,11 @@ export async function addResultToTask(
           task:resultsContainer ${sparqlEscapeUri(uri)};
           adms:status ${sparqlEscapeUri(JOB_STATUSES.SUCCESS)};
           dct:modified ${sparqlEscapeDateTime(new Date())}.
+      }
+      WHERE {
+        ${sparqlEscapeUri(taskUri)}
+          a task:Task;
+          adms:status ?statusUri;
+          dct:modified ?updatedOn.
       }`);
 }
