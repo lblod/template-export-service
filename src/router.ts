@@ -3,11 +3,11 @@ import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import AppError, { isError, isOperational } from './utils/app-error';
 import { logger } from './support/logger';
-import { collectResourcesToExport, Export } from './actions/export';
+import { collectResourcesToExport, createZip } from './actions/export';
 import { addResultToTask, createTask, updateTask } from './db/task';
 import { JOB_STATUSES } from './constants';
 import { createJobError } from './db/job-error';
-import { createZip } from './support/file-support';
+import { Export } from './schemas/serialization';
 
 const router = Router();
 
@@ -120,9 +120,20 @@ router.post('/export', validateExportBody, async function (_req, res, next) {
   }
 
   logger.debug('Exporting resources', resourcesToExport!);
-  const { logicalFileUri } = await createZip(resourcesToExport!);
-  await addResultToTask(task.uri, { logicalFileUri });
-  // TODO error handling
+
+  try {
+    const { logicalFileUri } = await createZip(resourcesToExport!);
+    await addResultToTask(task.uri, { logicalFileUri });
+  } catch (e) {
+    if (isError(e) && isOperational(e)) {
+      const jobError = await createJobError({ message: e.message });
+      task.statusUri = JOB_STATUSES.FAILED;
+      task.errorUri = jobError.uri;
+      await updateTask(task.uri, task);
+    } else {
+      return next(e);
+    }
+  }
 });
 
 router.post('/import', function (_req, _res, _next) {});

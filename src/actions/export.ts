@@ -7,21 +7,19 @@ import { Snippet } from '../schemas/snippet';
 import { SnippetList } from '../schemas/snippet-list';
 import { SnippetVersion } from '../schemas/snippet-version';
 import * as SetUtils from '../utils/set';
+import { uuid } from 'mu';
+import { stat } from 'fs/promises';
+import AdmZip from 'adm-zip';
+import { createLogicalFile, createPhysicalFile } from '../db/file';
+import { Serialization } from '../schemas/serialization';
 
-export type Export = {
-  documentContainers: DocumentContainer[];
-  editorDocuments: EditorDocument[];
-  snippetLists: SnippetList[];
-  snippets: Snippet[];
-  snippetVersions: SnippetVersion[];
-};
 export async function collectResourcesToExport({
   documentContainerUris,
   snippetListUris,
 }: {
   documentContainerUris: string[];
   snippetListUris: string[];
-}): Promise<Export> {
+}): Promise<Serialization> {
   const documentContainers: DocumentContainer[] = [];
   const editorDocuments: EditorDocument[] = [];
   const snippetLists: SnippetList[] = [];
@@ -70,33 +68,50 @@ export async function collectResourcesToExport({
   };
 }
 
-export function serializeExport(
-  exp: Export
-): { fileName: string; content: string }[] {
-  const result = [];
-  const metadata = JSON.stringify(exp, (key, value) => {
-    if (key === 'content') {
-      return;
-    }
-    if (value instanceof Set) {
-      return [...value];
-    }
-  });
-  result.push({
-    fileName: 'metadata.json',
-    content: metadata,
-  });
-  for (const editorDocument of exp.editorDocuments) {
-    result.push({
-      fileName: `editor-document-${editorDocument.id}`,
-      content: editorDocument.content,
+// TODO Error handling
+export async function createZip(serialization: Serialization) {
+  const zip = new AdmZip();
+  Object.entries(serialization).forEach(([resource, entities]) => {
+    entities?.forEach((entity) => {
+      zip.addFile(
+        `${resource}/${entity.id}.json`,
+        Buffer.from(JSON.stringify(entity))
+      );
     });
-  }
-  for (const snippetVersion of exp.snippetVersions) {
-    result.push({
-      fileName: `snippet-version-${snippetVersion.id}`,
-      content: snippetVersion.content,
-    });
-  }
-  return result;
+  });
+  const name = `${uuid()}.zip`;
+  const path = `/share/${name}`;
+  await zip.writeZipPromise(path);
+  const stats = await stat(path);
+  const size = stats.size;
+  const createdOn = new Date();
+  const logicalFileUuid = uuid();
+  const logicalFileUri = `http://lblod.data.gift/files/${logicalFileUuid}`;
+  const physicalFileUri = `share://${name}`;
+  const commonData = {
+    name,
+    format: 'application/zip',
+    extension: 'zip',
+    size,
+    createdOn,
+  };
+
+  const logicalPromise = createLogicalFile({
+    id: logicalFileUuid,
+    uri: logicalFileUri,
+    ...commonData,
+  });
+
+  const physicalPromise = createPhysicalFile({
+    ...commonData,
+    uri: physicalFileUri,
+    sourceUri: logicalFileUri,
+  });
+
+  return Promise.all([logicalPromise, physicalPromise]).then(
+    ([logicalFile, physicalFile]) => ({
+      logicalFileUri: logicalFile.uri,
+      physicalFileUri: physicalFile.uri,
+    })
+  );
 }
