@@ -1,20 +1,13 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
-import AppError, { isError, isOperational } from './utils/app-error';
+import AppError from './utils/app-error';
 import { logger } from './support/logger';
 import { collectResourcesToExport, createZip } from './actions/export';
-import { addResultToTask, createTask, updateTask } from './db/task';
-import { JOB_STATUSES } from './constants';
-import { createJobError } from './db/job-error';
-import { Export } from './schemas/serialization';
+import { withTask } from './support/task';
+import { createArchive } from './db/archive';
 
 const router = Router();
-
-interface ExportBody {
-  documentContainerUris: string;
-  snippetListUris: string;
-}
 interface ParsedExportBody {
   parsedBody: {
     documentContainerUris: string[];
@@ -23,7 +16,7 @@ interface ParsedExportBody {
 }
 
 const validateExportBody = (
-  req: Request<unknown, unknown, ExportBody, unknown, ParsedExportBody>,
+  req: Request,
   res: Response<unknown, ParsedExportBody>,
   next: NextFunction
 ) => {
@@ -78,62 +71,22 @@ const validateExportBody = (
   next();
 };
 
-router.post('/export', validateExportBody, async function (_req, res, next) {
+router.post('/export', validateExportBody, async function (req, res, next) {
   const documentContainerUris = res.locals.parsedBody.documentContainerUris;
-  const snippetListUris = res.locals.parsedBody.snippetListUris as string[];
-
-  const task = await createTask({
-    createdOn: new Date(),
-    statusUri: JOB_STATUSES.SCHEDULED,
-  });
-  res.status(201).json({
-    data: {
-      id: task.id,
-      attributes: {
-        uri: task.uri,
-        createdOn: task.createdOn,
-        updatedOn: task.updatedOn,
-        status: task.statusUri,
-        operation: task.operationUri,
-      },
-    },
-  });
-
-  task.statusUri = JOB_STATUSES.BUSY;
-  await updateTask(task.uri, task);
-  let resourcesToExport: Export;
-
-  try {
-    resourcesToExport = await collectResourcesToExport({
+  const snippetListUris = res.locals.parsedBody.snippetListUris;
+  await withTask(async () => {
+    const resourcesToExport = await collectResourcesToExport({
       documentContainerUris,
       snippetListUris,
     });
-  } catch (e) {
-    if (isError(e) && isOperational(e)) {
-      const jobError = await createJobError({ message: e.message });
-      task.statusUri = JOB_STATUSES.FAILED;
-      task.errorUri = jobError.uri;
-      await updateTask(task.uri, task);
-    } else {
-      return next(e);
-    }
-  }
 
-  logger.debug('Exporting resources', resourcesToExport!);
-
-  try {
-    const { logicalFileUri } = await createZip(resourcesToExport!);
-    await addResultToTask(task.uri, { logicalFileUri });
-  } catch (e) {
-    if (isError(e) && isOperational(e)) {
-      const jobError = await createJobError({ message: e.message });
-      task.statusUri = JOB_STATUSES.FAILED;
-      task.errorUri = jobError.uri;
-      await updateTask(task.uri, task);
-    } else {
-      return next(e);
-    }
-  }
+    logger.debug('Exporting resources', resourcesToExport);
+    const { logicalFileUri } = await createZip(resourcesToExport);
+    const archive = await createArchive({
+      fileUri: logicalFileUri,
+    });
+    return archive;
+  })(req, res, next);
 });
 
 router.post('/import', function (_req, _res, _next) {});
