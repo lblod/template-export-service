@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { coercedSet } from './common';
 
 export const SnippetSchema = z.object({
   id: z.string(),
@@ -7,7 +8,7 @@ export const SnippetSchema = z.object({
   createdOn: z.coerce.date(),
   updatedOn: z.coerce.date(),
   currentVersionUri: z.string(),
-  linkedSnippetListUris: z.set(z.string()),
+  linkedSnippetListUris: coercedSet(z.string()),
 });
 
 // Thanks to coersion the input type differs, but the `z.input` helper doesn't handle this

@@ -1,12 +1,13 @@
 import { z } from 'zod';
+import { coercedSet } from './common';
 
 export const SnippetListSchema = z.object({
   id: z.string(),
   uri: z.string(),
   label: z.string(),
   createdOn: z.coerce.date(),
-  snippetUris: z.set(z.string()),
-  importedResourceUris: z.set(z.string()),
+  snippetUris: coercedSet(z.string()),
+  importedResourceUris: coercedSet(z.string()),
 });
 
 // Thanks to coersion the input type differs, but the `z.input` helper doesn't handle this
