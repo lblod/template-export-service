@@ -75,7 +75,11 @@ export async function createZip(serialization: Serialization) {
     entities?.forEach((entity) => {
       zip.addFile(
         `${resource}/${entity.id}.json`,
-        Buffer.from(JSON.stringify(entity))
+        Buffer.from(
+          JSON.stringify(entity, (_key, value) =>
+            value instanceof Set ? [...value] : value
+          )
+        )
       );
     });
   });
