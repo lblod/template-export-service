@@ -14,5 +14,3 @@ export const SerializationSchema = z.object({
 });
 
 export type Serialization = z.infer<typeof SerializationSchema>;
-export type Export = Serialization;
-export type Import = Serialization;
