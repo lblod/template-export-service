@@ -16,8 +16,8 @@ export async function createJobError(data: Optional<JobError, 'id' | 'uri'>) {
     ${sparqlEscapeUri(uri)} 
       a oslc:Error;
       oslc:message ${sparqlEscapeString(data.message)}.
-    }
-  }`);
+  }
+  `);
   return {
     ...data,
     id,
