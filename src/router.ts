@@ -6,6 +6,9 @@ import { logger } from './support/logger';
 import { collectResourcesToExport, createZip } from './actions/export';
 import { withTask } from './support/task';
 import { createArchive } from './db/archive';
+import multer, { FileFilterCallback } from 'multer';
+import path from 'node:path';
+import { unzip } from './actions/import';
 
 const router = Router();
 interface ParsedExportBody {
@@ -89,5 +92,34 @@ router.post('/export', validateExportBody, async function (req, res, next) {
   })(req, res, next);
 });
 
-router.post('/import', function (_req, _res, _next) {});
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  callback: FileFilterCallback
+) => {
+  const validExtension = /.zip/.test(
+    path.extname(file.originalname).toLowerCase()
+  );
+  if (validExtension) {
+    return callback(null, true);
+  } else {
+    return callback(
+      new AppError(
+        StatusCodes.NOT_ACCEPTABLE,
+        `Expected a file with a .zip extension, got a file with a ${path.extname(file.originalname)} extension`
+      )
+    );
+  }
+};
+
+const upload = multer({ storage: multer.memoryStorage(), fileFilter });
+
+router.post('/import', upload.single('file'), async function (req, res, next) {
+  const file = req.file!;
+  await withTask(async () => {
+    const serialization = unzip(file.buffer);
+    logger.debug(serialization.documentContainers);
+    return;
+  })(req, res, next);
+});
 export default router;
