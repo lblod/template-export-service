@@ -41,7 +41,7 @@ export function withTask(handler: TaskHandler) {
     } catch (e: unknown) {
       if (isError(e) && isOperational(e)) {
         logger.error(
-          'Error occured while handling task with uri ${task.uri}:',
+          `Error occured while handling task with uri ${task.uri}:`,
           e
         );
         const jobError = await createJobError({ message: e.message });
