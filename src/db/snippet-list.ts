@@ -99,19 +99,24 @@ export async function persistSnippetList(snippetList: SnippetList) {
     PREFIX pav: <http://purl.org/pav/>
     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
     PREFIX say: <https://say.data.gift/ns/>
-    DELETE WHERE {
+    DELETE {
       ?uri 
         a say:SnippetList;
         mu:uuid ?id;
         skos:prefLabel ?label;
         pav:createdOn ?createdOn.
-
-      OPTIONAL {
-        ?uri say:hasSnippet ?snippetUri.
-      }
-      OPTIONAL {
-        ?uri say:snippetImportedResource ?importedResourceUri.
-      }
+      ?uri say:hasSnippet ?snippetUri.
+      ?uri say:snippetImportedResource ?importedResourceUri.
+    } 
+    WHERE {
+      ?uri 
+        a say:SnippetList;
+        mu:uuid ?id;
+        skos:prefLabel ?label;
+        pav:createdOn ?createdOn.
+      OPTIONAL { ?uri say:hasSnippet ?snippetUri. }
+      OPTIONAL { ?uri say:snippetImportedResource ?importedResourceUri. }
+      
       FILTER(?uri = ${sparqlEscapeUri(snippetList.uri)})
     };
     INSERT DATA {

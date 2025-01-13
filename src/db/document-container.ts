@@ -73,14 +73,20 @@ export async function persistDocumentContainer(container: DocumentContainer) {
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
     PREFIX pav: <http://purl.org/pav/>
 
-    DELETE WHERE {
+    DELETE {
       ?uri
         a ext:DocumentContainer;
         mu:uuid ?id;
         pav:hasCurrentVersion ?currentVersionUri.
-
       ?uri ext:editorDocumentFolder ?folderUri.
-      
+    }
+    WHERE {
+      ?uri
+        a ext:DocumentContainer;
+        mu:uuid ?id;
+        pav:hasCurrentVersion ?currentVersionUri.
+      OPTIONAL { ?uri ext:editorDocumentFolder ?folderUri. }
+
       FILTER(?uri = ${sparqlEscapeUri(container.uri)})
     };
     INSERT DATA {

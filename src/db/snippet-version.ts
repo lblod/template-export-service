@@ -43,6 +43,7 @@ export async function findSnippetVersion(uri: string) {
           ext:editorDocumentContent ?content;
           pav:createdOn ?createdOn;
           ^pav:hasVersion ?snippetUri.
+        
         OPTIONAL {
           ?uri schema:validThrough ?validThrough.
         }
@@ -97,7 +98,7 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
     PREFIX dct: <http://purl.org/dc/terms/>
     PREFIX schema: <http://schema.org/>
     PREFIX say: <https://say.data.gift/ns/>
-    DELETE WHERE {
+    DELETE {
       ?uri 
         a say:SnippetVersion;
         mu:uuid ?id;
@@ -105,12 +106,20 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         ext:editorDocumentContent ?content;
         pav:createdOn ?createdOn;
         ^pav:hasVersion ?snippetUri.
-      OPTIONAL {
-        ?uri schema:validThrough ?validThrough.
-      }
-      OPTIONAL {
-        ?uri pav:previousVersion ?previousVersionUri.
-      }
+      ?uri schema:validThrough ?validThrough.
+      ?uri pav:previousVersion ?previousVersionUri.
+    }
+    WHERE {
+      ?uri 
+        a say:SnippetVersion;
+        mu:uuid ?id;
+        dct:title ?title;
+        ext:editorDocumentContent ?content;
+        pav:createdOn ?createdOn;
+        ^pav:hasVersion ?snippetUri.
+      OPTIONAL { ?uri schema:validThrough ?validThrough. }
+      OPTIONAL { ?uri pav:previousVersion ?previousVersionUri. }
+
       FILTER(?uri = ${sparqlEscapeUri(snippetVersion.uri)})
     };
     INSERT DATA {

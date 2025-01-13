@@ -101,7 +101,7 @@ export async function persistEditorDocument(document: EditorDocument) {
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
     PREFIX pav: <http://purl.org/pav/>
     PREFIX dct: <http://purl.org/dc/terms/>
-    DELETE WHERE {
+    DELETE {
       ?uri 
         a ext:EditorDocument;
         mu:uuid ?id;
@@ -111,13 +111,20 @@ export async function persistEditorDocument(document: EditorDocument) {
         pav:lastUpdateOn ?updatedOn;
         ^pav:hasVersion ?documentContainerUri.
 
-      OPTIONAL {
-        ?uri ext:editorDocumentContext ?context.
-      }
-
-      OPTIONAL {
-        ?uri pav:previousVersion ?previousVersionUri.
-      }
+      ?uri ext:editorDocumentContext ?context.
+      ?uri pav:previousVersion ?previousVersionUri.
+    }
+    WHERE {
+      ?uri 
+        a ext:EditorDocument;
+        mu:uuid ?id;
+        dct:title ?title;
+        ext:editorDocumentContent ?content;
+        pav:createdOn ?createdOn;
+        pav:lastUpdateOn ?updatedOn;
+        ^pav:hasVersion ?documentContainerUri.
+      OPTIONAL { ?uri ext:editorDocumentContext ?context. }
+      OPTIONAL { ?uri pav:previousVersion ?previousVersionUri. }
 
       FILTER(?uri = ${sparqlEscapeUri(uri)})
     };

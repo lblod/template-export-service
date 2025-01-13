@@ -33,7 +33,7 @@ export async function persistTask(task: Task) {
     PREFIX dct: <http://purl.org/dc/terms/>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     DELETE {
-      ${sparqlEscapeUri(uri)} 
+      ?uri
         a task:Task;
         mu:uuid ?id;
         adms:status ?statusUri;
@@ -42,15 +42,15 @@ export async function persistTask(task: Task) {
         task:operation ?operationUri.
     }
     WHERE {
-      ${sparqlEscapeUri(uri)} 
+      ?uri
         a task:Task;
         mu:uuid ?id;
         adms:status ?statusUri;
         dct:created ?createdOn;
         dct:modified ?updatedOn.
-      OPTIONAL {
-        ${sparqlEscapeUri(uri)} task:operation ?operationUri.
-      }
+      OPTIONAL { ?uri task:operation ?operationUri. }
+      
+      FILTER(?uri = ${sparqlEscapeUri(uri)})
     };
     INSERT DATA {
       ${sparqlEscapeUri(uri)}

@@ -1,4 +1,4 @@
-import { query, sparqlEscapeString, sparqlEscapeUri, uuid } from 'mu';
+import { sparqlEscapeString, sparqlEscapeUri, update, uuid } from 'mu';
 
 import { Optional } from '../utils/types';
 import { JobError } from '../schemas/job-error';
@@ -17,27 +17,29 @@ export async function createJobError(data: Optional<JobError, 'id' | 'uri'>) {
 }
 
 export async function persistError(error: JobError) {
-  const { uri } = error;
-  await query(/* sparql */ `
+  await update(/* sparql */ `
     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
     PREFIX oslc: <http://open-services.net/ns/core#>
     DELETE {
-      ${sparqlEscapeUri(uri)} 
+      ?uri
         a oslc:Error;
-        mu:uuid ?id
+        mu:uuid ?id;
         oslc:message ?message.
-    } WHERE {
-      ${sparqlEscapeUri(uri)} 
+    }
+    WHERE {
+      ?uri
         a oslc:Error;
-        mu:uuid ?id
+        mu:uuid ?id;
         oslc:message ?message.
+
+      FILTER(?uri = ${sparqlEscapeUri(error.uri)})
     };
     INSERT DATA {
-      ${sparqlEscapeUri(uri)} 
+      ${sparqlEscapeUri(error.uri)}
         a oslc:Error;
-        mu:uuid ${sparqlEscapeString(error.id)}
+        mu:uuid ${sparqlEscapeString(error.id)};
         oslc:message ${sparqlEscapeString(error.message)}.
     }
-    `);
+  `);
 }

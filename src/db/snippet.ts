@@ -94,19 +94,26 @@ export async function persistSnippet(snippet: Snippet) {
     PREFIX pav: <http://purl.org/pav/>
     PREFIX schema: <http://schema.org/>
     PREFIX say: <https://say.data.gift/ns/>
-    DELETE WHERE {
+    DELETE {
       ?uri 
         a say:Snippet;
         mu:uuid ?id;
         pav:createdOn ?createdOn;
         pav:lastUpdateOn ?updatedOn;
         pav:hasCurrentVersion ?currentVersionUri.
-      OPTIONAL {
-        ?uri schema:position ?position.
-      }
-      OPTIONAL {
-        ?uri ext:linkedSnippetList ?linkedSnippetListUri.
-      }
+      ?uri schema:position ?position.
+      ?uri ext:linkedSnippetList ?linkedSnippetListUri.
+    }
+    WHERE {
+      ?uri 
+        a say:Snippet;
+        mu:uuid ?id;
+        pav:createdOn ?createdOn;
+        pav:lastUpdateOn ?updatedOn;
+        pav:hasCurrentVersion ?currentVersionUri.
+      OPTIONAL { ?uri schema:position ?position. }
+      OPTIONAL { ?uri ext:linkedSnippetList ?linkedSnippetListUri. }
+      
       FILTER(?uri = ${sparqlEscapeUri(snippet.uri)})
     };
     INSERT DATA {
