@@ -67,33 +67,49 @@ export async function findDocumentContainerOrFail(uri: string) {
   );
 }
 
+export async function persistDocumentContainer(container: DocumentContainer) {
+  await update(/* sparql */ `
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX pav: <http://purl.org/pav/>
+
+    DELETE WHERE {
+      ?uri
+        a ext:DocumentContainer;
+        mu:uuid ?id;
+        pav:hasCurrentVersion ?currentVersionUri.
+
+      ?uri ext:editorDocumentFolder ?folderUri.
+      
+      FILTER(?uri = ${sparqlEscapeUri(container.uri)})
+    };
+    INSERT DATA {
+      ${sparqlEscapeUri(container.uri)} 
+          a ext:DocumentContainer;
+          mu:uuid ${sparqlEscapeString(container.id)};
+          pav:hasCurrentVersion ${sparqlEscapeUri(container.currentVersionUri)}.
+      ${
+        container.folderUri
+          ? `${sparqlEscapeUri(container.uri)} ext:editorDocumentFolder ${sparqlEscapeUri(container.folderUri)}`
+          : ''
+      }
+    }
+    `);
+}
+
 export async function createDocumentContainer(
   data: Optional<DocumentContainer, 'id' | 'uri'>
 ) {
   const id: string = data.id ?? uuid();
   const uri: string =
     data.uri ?? `http://data.lblod.info/document-containers/${id}`;
-  await update(/* sparql */ `
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX pav: <http://purl.org/pav/>
-      INSERT DATA {
-        ${sparqlEscapeUri(uri)} 
-          a ext:DocumentContainer;
-          mu:uuid ${sparqlEscapeString(id)};
-          pav:hasCurrentVersion ${sparqlEscapeUri(data.currentVersionUri)}.
-        
-        ${
-          data.folderUri
-            ? `${sparqlEscapeUri(uri)} ext:editorDocumentFolder ${sparqlEscapeUri(data.folderUri)}`
-            : ''
-        }
-      }`);
-  return {
+  const container = {
     ...data,
     uri,
     id,
   };
+  await persistDocumentContainer(container);
+  return container;
 }
 
 export async function findCurrentVersion(documentContainer: DocumentContainer) {

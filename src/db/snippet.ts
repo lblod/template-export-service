@@ -78,38 +78,58 @@ export async function findSnippetOrFail(uri: string) {
 export async function createSnippet(data: Optional<Snippet, 'id' | 'uri'>) {
   const id: string = data.id ?? uuid();
   const uri: string = data.uri ?? `http://data.lblod.info/id/snippets/${id}`;
-  await update(/* sparql */ `
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX schema: <http://schema.org/>
-      PREFIX say: <https://say.data.gift/ns/>
-      INSERT DATA {
-        ${sparqlEscapeUri(uri)} 
-          a say:Snippet;
-          mu:uuid ${sparqlEscapeString(id)};
-          pav:createdOn ?createdOn;
-          pav:lastUpdateOn ?updatedOn;
-          pav:hasCurrentVersion ?currentVersionUri.
-
-        ${
-          data.position
-            ? `${sparqlEscapeUri(uri)} schema:position ${sparqlEscapeInt(data.position)}`
-            : ''
-        }
-
-        ${[...data.linkedSnippetListUris]
-          .map(
-            (snippetListUri) =>
-              `${sparqlEscapeUri(uri)} ext:linkedSnippetList ${sparqlEscapeUri(snippetListUri)}.`
-          )
-          .join(`\n`)}
-      }`);
-  return {
+  const snippet = {
     ...data,
     id,
     uri,
   };
+  await persistSnippet(snippet);
+  return snippet;
+}
+
+export async function persistSnippet(snippet: Snippet) {
+  await update(/* sparql */ `
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX pav: <http://purl.org/pav/>
+    PREFIX schema: <http://schema.org/>
+    PREFIX say: <https://say.data.gift/ns/>
+    DELETE WHERE {
+      ?uri 
+        a say:Snippet;
+        mu:uuid ?id;
+        pav:createdOn ?createdOn;
+        pav:lastUpdateOn ?updatedOn;
+        pav:hasCurrentVersion ?currentVersionUri.
+      OPTIONAL {
+        ?uri schema:position ?position.
+      }
+      OPTIONAL {
+        ?uri ext:linkedSnippetList ?linkedSnippetListUri.
+      }
+      FILTER(?uri = ${sparqlEscapeUri(snippet.uri)})
+    };
+    INSERT DATA {
+      ${sparqlEscapeUri(snippet.uri)} 
+        a say:Snippet;
+        mu:uuid ${sparqlEscapeString(snippet.id)};
+        pav:createdOn ?createdOn;
+        pav:lastUpdateOn ?updatedOn;
+        pav:hasCurrentVersion ?currentVersionUri.
+
+      ${
+        snippet.position
+          ? `${sparqlEscapeUri(snippet.uri)} schema:position ${sparqlEscapeInt(snippet.position)}`
+          : ''
+      }
+
+      ${[...snippet.linkedSnippetListUris]
+        .map(
+          (snippetListUri) =>
+            `${sparqlEscapeUri(snippet.uri)} ext:linkedSnippetList ${sparqlEscapeUri(snippetListUri)}.`
+        )
+        .join(`\n`)}
+    }`);
 }
 
 export async function findCurrentVersion(snippet: Snippet) {

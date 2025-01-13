@@ -1,5 +1,4 @@
 import {
-  query,
   sparqlEscapeDateTime,
   sparqlEscapeString,
   sparqlEscapeUri,
@@ -11,104 +10,72 @@ import { Optional } from '../utils/types';
 import { Task } from '../schemas/task';
 
 export async function createTask(
-  data: Optional<Task, 'id' | 'uri' | 'createdOn' | 'updatedOn'>
+  data: Optional<Task, 'id' | 'uri'>
 ): Promise<Task> {
-  const createdOn = data.createdOn ?? new Date();
-  const updatedOn = data.updatedOn ?? createdOn;
   const id: string = data.id ?? uuid();
   const uri: string = data.uri ?? `http://lblod.data.gift/tasks/${id}`;
-  await query(/* sparql */ `
-  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-  PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-  PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
-  PREFIX adms: <http://www.w3.org/ns/adms#>
-  PREFIX dct: <http://purl.org/dc/terms/>
-  PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-  INSERT DATA {
-    ${sparqlEscapeUri(uri)} 
-      a task:Task;
-      mu:uuid ${sparqlEscapeString(id)};
-      adms:status ${sparqlEscapeUri(data.statusUri)};
-      dct:created ${sparqlEscapeDateTime(createdOn)};
-      dct:modified ${sparqlEscapeDateTime(updatedOn)}.
-    
-    ${
-      data.operationUri
-        ? `${sparqlEscapeUri(uri)} task:operation ${sparqlEscapeUri(data.operationUri)}`
-        : ''
-    }
-    ${
-      data.errorUri
-        ? `${sparqlEscapeUri(uri)} task:error ${sparqlEscapeUri(data.errorUri)}`
-        : ''
-    }
-    ${
-      data.resultUri
-        ? `${sparqlEscapeUri(uri)} task:resultsContainer ${sparqlEscapeUri(data.resultUri)}`
-        : ''
-    }
-  }`);
-  return {
+  const task = {
     ...data,
     id,
     uri,
-    createdOn,
-    updatedOn,
   };
+  await persistTask(task);
+  return task;
 }
 
-export async function updateTask(
-  uri: string,
-  data: Optional<Task, 'id' | 'uri'>
-) {
+export async function persistTask(task: Task) {
+  const { uri } = task;
   await update(/* sparql */ `
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
-      PREFIX adms: <http://www.w3.org/ns/adms#>
-      PREFIX dct: <http://purl.org/dc/terms/>
-      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-      DELETE {
-        ${sparqlEscapeUri(uri)} 
-          adms:status ?statusUri;
-          dct:created ?createdOn;
-          dct:modified ?updatedOn;
-          task:operation ?operationUri.
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+    PREFIX adms: <http://www.w3.org/ns/adms#>
+    PREFIX dct: <http://purl.org/dc/terms/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    DELETE {
+      ${sparqlEscapeUri(uri)} 
+        a task:Task;
+        mu:uuid ?id;
+        adms:status ?statusUri;
+        dct:created ?createdOn;
+        dct:modified ?updatedOn;
+        task:operation ?operationUri.
+    }
+    WHERE {
+      ${sparqlEscapeUri(uri)} 
+        a task:Task;
+        mu:uuid ?id;
+        adms:status ?statusUri;
+        dct:created ?createdOn;
+        dct:modified ?updatedOn.
+      OPTIONAL {
+        ${sparqlEscapeUri(uri)} task:operation ?operationUri.
       }
-      INSERT {
-        ${sparqlEscapeUri(uri)}
-          adms:status ${sparqlEscapeUri(data.statusUri)};
-          dct:created ${sparqlEscapeDateTime(data.createdOn)};
-          dct:modified ${sparqlEscapeDateTime(data.updatedOn)}.
-        
-        ${
-          data.operationUri
-            ? `${sparqlEscapeUri(uri)} task:operation ${sparqlEscapeUri(data.operationUri)}`
-            : ''
-        }
-        ${
-          data.errorUri
-            ? `${sparqlEscapeUri(uri)} task:error ${sparqlEscapeUri(data.errorUri)}`
-            : ''
-        }
-        ${
-          data.resultUri
-            ? `${sparqlEscapeUri(uri)} task:resultsContainer ${sparqlEscapeUri(data.resultUri)}`
-            : ''
-        }
+    };
+    INSERT DATA {
+      ${sparqlEscapeUri(uri)}
+        a task:Task;
+        mu:uuid ${sparqlEscapeString(task.id)};
+        adms:status ${sparqlEscapeUri(task.statusUri)};
+        dct:created ${sparqlEscapeDateTime(task.createdOn)};
+        dct:modified ${sparqlEscapeDateTime(task.updatedOn)}.
+      
+      ${
+        task.operationUri
+          ? `${sparqlEscapeUri(uri)} task:operation ${sparqlEscapeUri(task.operationUri)}`
+          : ''
       }
-      WHERE {
-        ${sparqlEscapeUri(uri)} 
-          a task:Task;
-          mu:uuid ?id;
-          adms:status ?statusUri;
-          dct:created ?createdOn;
-          dct:modified ?updatedOn.
-        OPTIONAL {
-          ${sparqlEscapeUri(uri)} task:operation ?operationUri.
-        }
-      }`);
+      ${
+        task.errorUri
+          ? `${sparqlEscapeUri(uri)} task:error ${sparqlEscapeUri(task.errorUri)}`
+          : ''
+      }
+      ${
+        task.resultUri
+          ? `${sparqlEscapeUri(uri)} task:resultsContainer ${sparqlEscapeUri(task.resultUri)}`
+          : ''
+      }
+    }`);
 }
 
 /**

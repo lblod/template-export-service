@@ -1,11 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
-import { createTask, updateTask } from '../db/task';
+import { createTask, persistTask } from '../db/task';
 import { JOB_STATUSES } from '../constants';
 import { Task } from '../schemas/task';
 import { isError, isOperational } from '../utils/app-error';
 import { createJobError } from '../db/job-error';
 import { logger } from './logger';
 import { DataContainer } from '../schemas/data-container';
+import { JobError } from '../schemas/job-error';
 
 export type TaskHandler = (
   req?: Request,
@@ -15,8 +16,10 @@ export type TaskHandler = (
 
 export function withTask(handler: TaskHandler) {
   return async function (req: Request, res: Response, next: NextFunction) {
+    const now = new Date();
     const task = await createTask({
-      createdOn: new Date(),
+      createdOn: now,
+      updatedOn: now,
       statusUri: JOB_STATUSES.SCHEDULED,
     });
     res.status(202).json({
@@ -32,44 +35,43 @@ export function withTask(handler: TaskHandler) {
       },
     });
     try {
-      await updateTaskStatus(task, JOB_STATUSES.BUSY);
-      const result = await handler(req, res, next);
-      if (result) {
-        await setTaskResult(task, result);
-      }
-      await updateTaskStatus(task, JOB_STATUSES.SUCCESS);
+      await updateTask(task, JOB_STATUSES.BUSY);
+      const result = (await handler(req, res, next)) ?? null;
+      await updateTask(task, JOB_STATUSES.SUCCESS, result);
     } catch (e: unknown) {
       if (isError(e) && isOperational(e)) {
         logger.error(
-          `Error occured while handling task with uri ${task.uri}:`,
+          `Error occurred while handling task with uri ${task.uri}:`,
           e
         );
         const jobError = await createJobError({ message: e.message });
-        task.statusUri = JOB_STATUSES.FAILED;
-        task.errorUri = jobError.uri;
-        await updateTask(task.uri, task);
+        await updateTask(task, JOB_STATUSES.FAILED, null, jobError);
         return;
       } else {
         const jobError = await createJobError({
-          message: `Unknown error occured while handling task with uri ${task.uri}`,
+          message: 'Unknown error occurred',
         });
-        task.statusUri = JOB_STATUSES.FAILED;
-        task.errorUri = jobError.uri;
-        await updateTask(task.uri, task);
+        await updateTask(task, JOB_STATUSES.FAILED, null, jobError);
+
         return next(e);
       }
     }
   };
 }
 
-async function updateTaskStatus(task: Task, status: JOB_STATUSES) {
+async function updateTask(
+  task: Task,
+  status: JOB_STATUSES,
+  result?: DataContainer | null,
+  error?: JobError | null
+) {
   task.statusUri = status;
   task.updatedOn = new Date();
-  await updateTask(task.uri, task);
-}
-
-async function setTaskResult(task: Task, result: DataContainer) {
-  task.resultUri = result.uri;
-  task.updatedOn = new Date();
-  await updateTask(task.uri, task);
+  if (error) {
+    task.errorUri = error.uri;
+  }
+  if (result) {
+    task.resultUri = result.uri;
+  }
+  await persistTask(task);
 }

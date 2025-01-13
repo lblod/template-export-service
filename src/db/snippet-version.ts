@@ -75,40 +75,62 @@ export async function findSnippetVersionOrFail(uri: string) {
   );
 }
 
-export async function createSnippet(
+export async function createSnippetVersion(
   data: Optional<SnippetVersion, 'id' | 'uri'>
 ) {
   const id: string = data.id ?? uuid();
   const uri: string =
     data.uri ?? `http://data.lblod.info/id/snippet-versions/${id}`;
-  await update(/* sparql */ `
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX dct: <http://purl.org/dc/terms/>
-      PREFIX schema: <http://schema.org/>
-      PREFIX say: <https://say.data.gift/ns/>
-      INSERT DATA {
-        ${sparqlEscapeUri(uri)} 
-          a say:SnippetVersion;
-          mu:uuid ${sparqlEscapeString(id)};
-          dct:title ${sparqlEscapeString(data.title)};
-          ext:editorDocumentContent ${sparqlEscapeString(data.content)};
-          pav:createdOn ${sparqlEscapeDateTime(data.createdOn)}.
-        
-        ${
-          data.validThrough
-            ? `${sparqlEscapeUri(uri)} schema:position ${sparqlEscapeDateTime(data.validThrough)}`
-            : ''
-        }
-        ${
-          data.previousVersionUri
-            ? `${sparqlEscapeUri(uri)} pav:previousVersion ${sparqlEscapeUri(data.previousVersionUri)}`
-            : ''
-        }
-      }`);
-  return {
+  const snippetVersion = {
     ...data,
     id,
     uri,
   };
+  await persistSnippetVersion(snippetVersion);
+  return snippetVersion;
+}
+
+export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
+  await update(/* sparql */ `
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX pav: <http://purl.org/pav/>
+    PREFIX dct: <http://purl.org/dc/terms/>
+    PREFIX schema: <http://schema.org/>
+    PREFIX say: <https://say.data.gift/ns/>
+    DELETE WHERE {
+      ?uri 
+        a say:SnippetVersion;
+        mu:uuid ?id;
+        dct:title ?title;
+        ext:editorDocumentContent ?content;
+        pav:createdOn ?createdOn;
+        ^pav:hasVersion ?snippetUri.
+      OPTIONAL {
+        ?uri schema:validThrough ?validThrough.
+      }
+      OPTIONAL {
+        ?uri pav:previousVersion ?previousVersionUri.
+      }
+      FILTER(?uri = ${sparqlEscapeUri(snippetVersion.uri)})
+    };
+    INSERT DATA {
+      ${sparqlEscapeUri(snippetVersion.uri)} 
+        a say:SnippetVersion;
+        mu:uuid ${sparqlEscapeString(snippetVersion.id)};
+        dct:title ${sparqlEscapeString(snippetVersion.title)};
+        ext:editorDocumentContent ${sparqlEscapeString(snippetVersion.content)};
+        pav:createdOn ${sparqlEscapeDateTime(snippetVersion.createdOn)};
+        ^pav:hasVersion ${sparqlEscapeUri(snippetVersion.snippetUri)}.
+      
+      ${
+        snippetVersion.validThrough
+          ? `${sparqlEscapeUri(snippetVersion.uri)} schema:position ${sparqlEscapeDateTime(snippetVersion.validThrough)}`
+          : ''
+      }
+      ${
+        snippetVersion.previousVersionUri
+          ? `${sparqlEscapeUri(snippetVersion.uri)} pav:previousVersion ${sparqlEscapeUri(snippetVersion.previousVersionUri)}`
+          : ''
+      }
+    }`);
 }

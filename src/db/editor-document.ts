@@ -85,28 +85,60 @@ export async function createEditorDocument(
   const id: string = data.id ?? uuid();
   const uri: string =
     data.uri ?? `http://data.lblod.info/editor-documents/${id}`;
-  await update(/* sparql */ `
-      PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-      PREFIX pav: <http://purl.org/pav/>
-      PREFIX dct: <http://purl.org/dc/terms/>
-      INSERT DATA {
-        ${sparqlEscapeUri(uri)} 
-          a ext:EditorDocument;
-            mu:uuid ${sparqlEscapeString(id)};
-            dct:title ${sparqlEscapeString(data.title)};
-            ext:editorDocumentContent ${sparqlEscapeString(data.content)};
-            pav:createdOn ${sparqlEscapeDateTime(data.createdOn)};
-            pav:lastUpdateOn ${sparqlEscapeDateTime(data.updatedOn)}.
-        ${
-          data.context
-            ? `${sparqlEscapeUri(uri)} ext:editorDocumentContext ${sparqlEscapeString(data.context)}`
-            : ''
-        }
-      }`);
-  return {
+  const document = {
     ...data,
     id,
     uri,
   };
+  await persistEditorDocument(document);
+  return document;
+}
+
+export async function persistEditorDocument(document: EditorDocument) {
+  const { uri } = document;
+  await update(/* sparql */ `
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX pav: <http://purl.org/pav/>
+    PREFIX dct: <http://purl.org/dc/terms/>
+    DELETE WHERE {
+      ?uri 
+        a ext:EditorDocument;
+        mu:uuid ?id;
+        dct:title ?title;
+        ext:editorDocumentContent ?content;
+        pav:createdOn ?createdOn;
+        pav:lastUpdateOn ?updatedOn;
+        ^pav:hasVersion ?documentContainerUri.
+
+      OPTIONAL {
+        ?uri ext:editorDocumentContext ?context.
+      }
+
+      OPTIONAL {
+        ?uri pav:previousVersion ?previousVersionUri.
+      }
+
+      FILTER(?uri = ${sparqlEscapeUri(uri)})
+    };
+    INSERT DATA {
+      ${sparqlEscapeUri(uri)} 
+        a ext:EditorDocument;
+          mu:uuid ${sparqlEscapeString(document.id)};
+          dct:title ${sparqlEscapeString(document.title)};
+          ext:editorDocumentContent ${sparqlEscapeString(document.content)};
+          pav:createdOn ${sparqlEscapeDateTime(document.createdOn)};
+          pav:lastUpdateOn ${sparqlEscapeDateTime(document.updatedOn)};
+          ^pav:hasVersion ${sparqlEscapeUri(document.documentContainerUri)}.
+      ${
+        document.previousVersionUri
+          ? `${sparqlEscapeUri(uri)} pav:hasPreviousVersion ${sparqlEscapeUri(document.previousVersionUri)}`
+          : ''
+      }
+      ${
+        document.context
+          ? `${sparqlEscapeUri(uri)} ext:editorDocumentContext ${sparqlEscapeString(document.context)}`
+          : ''
+      }
+    }`);
 }
