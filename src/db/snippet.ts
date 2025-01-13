@@ -11,6 +11,8 @@ import { StatusCodes } from 'http-status-codes';
 import { objectify } from '../utils/sparql';
 import { Optional } from '../utils/types';
 import { Snippet, SnippetInput, SnippetSchema } from '../schemas/snippet';
+import { expect } from '../utils/option';
+import { findSnippetVersionOrFail } from './snippet-version';
 
 export async function findSnippet(uri: string) {
   const response = await query<Snippet>(/* sparql */ `
@@ -44,10 +46,7 @@ export async function findSnippet(uri: string) {
       }
       GROUP BY ?uri ?id ?position ?createdOn ?updatedOn ?currentVersionUri`);
   if (!response.results.bindings.length) {
-    throw new AppError(
-      StatusCodes.NOT_FOUND,
-      `Snippet ${uri} was not found in the database`
-    );
+    return null;
   }
   if (response.results.bindings.length > 1) {
     throw new AppError(
@@ -63,6 +62,17 @@ export async function findSnippet(uri: string) {
       : new Set(),
   };
   return SnippetSchema.parse(snippet);
+}
+
+export async function findSnippetOrFail(uri: string) {
+  const snippet = await findSnippet(uri);
+  return expect(
+    snippet,
+    new AppError(
+      StatusCodes.NOT_FOUND,
+      `Snippet ${uri} was not found in the database`
+    )
+  );
 }
 
 export async function createSnippet(data: Optional<Snippet, 'id' | 'uri'>) {
@@ -100,4 +110,8 @@ export async function createSnippet(data: Optional<Snippet, 'id' | 'uri'>) {
     id,
     uri,
   };
+}
+
+export async function findCurrentVersion(snippet: Snippet) {
+  return findSnippetVersionOrFail(snippet.currentVersionUri);
 }

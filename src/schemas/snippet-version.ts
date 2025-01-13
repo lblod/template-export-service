@@ -7,6 +7,7 @@ export const SnippetVersionSchema = z.object({
   content: z.string(),
   createdOn: z.coerce.date(),
   previousVersionUri: z.string().optional(),
+  snippetUri: z.string(),
   validThrough: z.coerce.date().optional(),
 });
 

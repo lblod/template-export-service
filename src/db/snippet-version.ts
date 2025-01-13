@@ -15,7 +15,7 @@ import {
   SnippetVersionInput,
   SnippetVersionSchema,
 } from '../schemas/snippet-version';
-import { findSnippet } from './snippet';
+import { expect } from '../utils/option';
 
 export async function findSnippetVersion(uri: string) {
   const response = await query<SnippetVersion>(/* sparql */ `
@@ -33,6 +33,7 @@ export async function findSnippetVersion(uri: string) {
         ?content
         ?createdOn
         ?validThrough
+        ?snippetUri
         ?previousVersionUri
       WHERE {
         ?uri 
@@ -40,7 +41,8 @@ export async function findSnippetVersion(uri: string) {
           mu:uuid ?id;
           dct:title ?title;
           ext:editorDocumentContent ?content;
-          pav:createdOn ?createdOn.
+          pav:createdOn ?createdOn;
+          ^pav:hasVersion ?snippetUri.
         OPTIONAL {
           ?uri schema:validThrough ?validThrough.
         }
@@ -50,10 +52,7 @@ export async function findSnippetVersion(uri: string) {
         FILTER(?uri = ${sparqlEscapeUri(uri)})
       }`);
   if (!response.results.bindings.length) {
-    throw new AppError(
-      StatusCodes.NOT_FOUND,
-      `SnippetVersion ${uri} was not found in the database`
-    );
+    return null;
   }
   if (response.results.bindings.length > 1) {
     throw new AppError(
@@ -63,6 +62,17 @@ export async function findSnippetVersion(uri: string) {
   }
   const snippet: SnippetVersionInput = objectify(response.results.bindings[0]);
   return SnippetVersionSchema.parse(snippet);
+}
+
+export async function findSnippetVersionOrFail(uri: string) {
+  const snippetVersion = await findSnippetVersion(uri);
+  return expect(
+    snippetVersion,
+    new AppError(
+      StatusCodes.NOT_FOUND,
+      `SnippetVersion ${uri} was not found in the database`
+    )
+  );
 }
 
 export async function createSnippet(
@@ -100,14 +110,5 @@ export async function createSnippet(
     ...data,
     id,
     uri,
-  };
-}
-
-export async function findSnippetWithCurrentVersion(uri: string) {
-  const snippet = await findSnippet(uri);
-  const currentVersion = await findSnippetVersion(snippet.currentVersionUri);
-  return {
-    snippet,
-    currentVersion,
   };
 }

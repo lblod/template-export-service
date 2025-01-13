@@ -7,7 +7,8 @@ import {
 } from '../schemas/document-container';
 import { objectify } from '../utils/sparql';
 import { Optional } from '../utils/types';
-import { findEditorDocument } from './editor-document';
+import { findEditorDocumentOrFail } from './editor-document';
+import { expect } from '../utils/option';
 
 export async function findDocumentContainer(uri: string) {
   const response = await query<DocumentContainer>(/* sparql */ `
@@ -37,10 +38,7 @@ export async function findDocumentContainer(uri: string) {
       GROUP BY ?uri ?id ?folderUri ?currentVersionUri
       `);
   if (!response.results.bindings.length) {
-    throw new AppError(
-      StatusCodes.NOT_FOUND,
-      `DocumentContainer ${uri} was not found in the database`
-    );
+    return null;
   }
   if (response.results.bindings.length > 1) {
     throw new AppError(
@@ -56,6 +54,17 @@ export async function findDocumentContainer(uri: string) {
       : new Set<string>(),
   };
   return DocumentContainerSchema.parse(documentContainer);
+}
+
+export async function findDocumentContainerOrFail(uri: string) {
+  const container = await findDocumentContainer(uri);
+  return expect(
+    container,
+    new AppError(
+      StatusCodes.NOT_FOUND,
+      `DocumentContainer ${uri} was not found in the database`
+    )
+  );
 }
 
 export async function createDocumentContainer(
@@ -87,13 +96,6 @@ export async function createDocumentContainer(
   };
 }
 
-export async function findDocumentContainerWithCurrentVersion(uri: string) {
-  const documentContainer = await findDocumentContainer(uri);
-  const currentVersion = await findEditorDocument(
-    documentContainer.currentVersionUri
-  );
-  return {
-    documentContainer,
-    currentVersion,
-  };
+export async function findCurrentVersion(documentContainer: DocumentContainer) {
+  return findEditorDocumentOrFail(documentContainer.currentVersionUri);
 }

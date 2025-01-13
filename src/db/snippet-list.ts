@@ -15,7 +15,8 @@ import {
   SnippetListInput,
   SnippetListSchema,
 } from '../schemas/snippet-list';
-import { findSnippet } from './snippet';
+import { findSnippetOrFail } from './snippet';
+import { expect } from '../utils/option';
 
 export async function findSnippetList(uri: string) {
   const response = await query<SnippetList>(/* sparql */ `
@@ -46,10 +47,7 @@ export async function findSnippetList(uri: string) {
       }
       GROUP BY ?uri ?id ?label ?createdOn`);
   if (!response.results.bindings.length) {
-    throw new AppError(
-      StatusCodes.NOT_FOUND,
-      `SnippetList ${uri} was not found in the database`
-    );
+    return null;
   }
   if (response.results.bindings.length > 1) {
     throw new AppError(
@@ -68,6 +66,17 @@ export async function findSnippetList(uri: string) {
       : new Set(),
   };
   return SnippetListSchema.parse(snippetList);
+}
+
+export async function findSnippetListOrFail(uri: string) {
+  const snippetList = await findSnippetList(uri);
+  return expect(
+    snippetList,
+    new AppError(
+      StatusCodes.NOT_FOUND,
+      `SnippetList ${uri} was not found in the database`
+    )
+  );
 }
 
 export async function createSnippetList(
@@ -108,16 +117,8 @@ export async function createSnippetList(
   };
 }
 
-export async function findSnippetListWithSnippets(listUri: string) {
-  const snippetList = await findSnippetList(listUri);
-  const snippets = await Promise.all(
-    [...snippetList.snippetUris].map(async (uri) => {
-      const snippet = await findSnippet(uri);
-      return snippet;
-    })
+export async function findSnippets(snippetList: SnippetList) {
+  return Promise.all(
+    [...snippetList.snippetUris].map(async (uri) => findSnippetOrFail(uri))
   );
-  return {
-    snippetList,
-    snippets,
-  };
 }

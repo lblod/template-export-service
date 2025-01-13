@@ -8,6 +8,8 @@ export const EditorDocumentSchema = z.object({
   context: z.string().optional(),
   createdOn: z.coerce.date(),
   updatedOn: z.coerce.date(),
+  previousVersionUri: z.string().optional(),
+  documentContainerUri: z.string(),
 });
 
 // Thanks to coersion the input type differs, but the `z.input` helper doesn't handle this
