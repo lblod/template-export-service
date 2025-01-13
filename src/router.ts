@@ -70,7 +70,6 @@ const validateExportBody = (
     documentContainerUris: documentContainerUris ?? [],
     snippetListUris: snippetListUris ?? [],
   };
-  logger.debug('Received export request body', res.locals.parsedBody);
   next();
 };
 
@@ -83,7 +82,6 @@ router.post('/export', validateExportBody, async function (req, res, next) {
       snippetListUris,
     });
 
-    logger.debug('Exporting resources', resourcesToExport);
     const { logicalFileUri } = await createZip(resourcesToExport);
     const archive = await createArchive({
       fileUri: logicalFileUri,
@@ -117,10 +115,10 @@ const upload = multer({ storage: multer.memoryStorage(), fileFilter });
 router.post('/import', upload.single('file'), async function (req, res, next) {
   const file = req.file!;
   await withTask(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const serialization = unzip(file.buffer);
     // TODO: Check if we want to keep the linked-list repr or not
     // await importResources(serialization);
-    logger.debug(serialization.documentContainers);
     return;
   })(req, res, next);
 });
