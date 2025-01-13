@@ -4,7 +4,11 @@ import AppError from '../utils/app-error';
 import { StatusCodes } from 'http-status-codes';
 import path from 'node:path';
 import { logger } from '../support/logger';
-
+import { persistEditorDocument } from '../db/editor-document';
+import { persistDocumentContainer } from '../db/document-container';
+import { persistSnippetList } from '../db/snippet-list';
+import { persistSnippet } from '../db/snippet';
+import { persistSnippetVersion } from '../db/snippet-version';
 export function unzip(buffer: Buffer): Serialization {
   const result: Record<keyof Serialization, unknown[]> = {
     documentContainers: [],
@@ -46,4 +50,19 @@ export function unzip(buffer: Buffer): Serialization {
       'Unexpected error occured while parsing files in uploaded zip folder.'
     );
   }
+}
+
+export async function importResources(serialization: Serialization) {
+  const {
+    documentContainers,
+    editorDocuments,
+    snippetLists,
+    snippets,
+    snippetVersions,
+  } = serialization;
+  await Promise.all(documentContainers.map(persistDocumentContainer));
+  await Promise.all(editorDocuments.map(persistEditorDocument));
+  await Promise.all(snippetLists.map(persistSnippetList));
+  await Promise.all(snippets.map(persistSnippet));
+  await Promise.all(snippetVersions.map(persistSnippetVersion));
 }
