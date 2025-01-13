@@ -79,7 +79,7 @@ export async function createZip(serialization: Serialization) {
       );
     });
   });
-  const name = `${uuid()}.zip`;
+  const name = `template-export-${uuid()}.zip`;
   const path = `/share/${name}`;
   await zip.writeZipPromise(path);
   const stats = await stat(path);
