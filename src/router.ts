@@ -8,7 +8,7 @@ import { withTask } from './support/task';
 import { createArchive } from './db/archive';
 import multer, { FileFilterCallback } from 'multer';
 import path from 'node:path';
-import { unzip } from './actions/import';
+import { unzip, validateRelationships } from './actions/import';
 
 const router = Router();
 interface ParsedExportBody {
@@ -115,8 +115,8 @@ const upload = multer({ storage: multer.memoryStorage(), fileFilter });
 router.post('/import', upload.single('file'), async function (req, res, next) {
   const file = req.file!;
   await withTask(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const serialization = unzip(file.buffer);
+    validateRelationships(serialization);
     // TODO: Check if we want to keep the linked-list repr or not
     // await importResources(serialization);
     return;
