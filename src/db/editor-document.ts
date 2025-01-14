@@ -105,8 +105,8 @@ export async function persistEditorDocument(document: EditorDocument) {
         dct:title ?title;
         ext:editorDocumentContent ?content;
         pav:createdOn ?createdOn;
-        pav:lastUpdateOn ?updatedOn;
-        ^pav:hasVersion ?documentContainerUri.
+        pav:lastUpdateOn ?updatedOn.
+      ?documentContainerUri pav:hasVersion ?uri.
       ?uri ext:editorDocumentContext ?context.
     }
     WHERE {
@@ -119,18 +119,20 @@ export async function persistEditorDocument(document: EditorDocument) {
         pav:lastUpdateOn ?updatedOn;
         ^pav:hasVersion ?documentContainerUri.
       OPTIONAL { ?uri ext:editorDocumentContext ?context. }
-
+  
       FILTER(?uri = ${sparqlEscapeUri(uri)})
     };
     INSERT DATA {
-      ${sparqlEscapeUri(uri)} 
+      ${sparqlEscapeUri(uri)}
         a ext:EditorDocument;
-          mu:uuid ${sparqlEscapeString(document.id)};
-          dct:title ${sparqlEscapeString(document.title)};
-          ext:editorDocumentContent ${sparqlEscapeString(document.content)};
-          pav:createdOn ${sparqlEscapeDateTime(document.createdOn)};
-          pav:lastUpdateOn ${sparqlEscapeDateTime(document.updatedOn)};
-          ^pav:hasVersion ${sparqlEscapeUri(document.documentContainerUri)}.
+        mu:uuid ${sparqlEscapeString(document.id)};
+        dct:title ${sparqlEscapeString(document.title)};
+        ext:editorDocumentContent ${sparqlEscapeString(document.content)};
+        pav:createdOn ${sparqlEscapeDateTime(document.createdOn)};
+        pav:lastUpdateOn ${sparqlEscapeDateTime(document.updatedOn)}.
+      
+      ${sparqlEscapeUri(document.documentContainerUri)}
+        pav:hasVersion ${sparqlEscapeUri(uri)}.
       ${
         document.context
           ? `${sparqlEscapeUri(uri)} ext:editorDocumentContext ${sparqlEscapeString(document.context)}`

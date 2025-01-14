@@ -100,8 +100,8 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         mu:uuid ?id;
         dct:title ?title;
         ext:editorDocumentContent ?content;
-        pav:createdOn ?createdOn;
-        ^pav:hasVersion ?snippetUri.
+        pav:createdOn ?createdOn.
+      ?snippetUri pav:hasVersion ?uri.
       ?uri schema:validThrough ?validThrough.
     }
     WHERE {
@@ -122,8 +122,10 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         mu:uuid ${sparqlEscapeString(snippetVersion.id)};
         dct:title ${sparqlEscapeString(snippetVersion.title)};
         ext:editorDocumentContent ${sparqlEscapeString(snippetVersion.content)};
-        pav:createdOn ${sparqlEscapeDateTime(snippetVersion.createdOn)};
-        ^pav:hasVersion ${sparqlEscapeUri(snippetVersion.snippetUri)}.
+        pav:createdOn ${sparqlEscapeDateTime(snippetVersion.createdOn)}.
+      
+      ${sparqlEscapeUri(snippetVersion.snippetUri)}
+        pav:hasVersion ${sparqlEscapeUri(snippetVersion.uri)}.
       
       ${
         snippetVersion.validThrough
