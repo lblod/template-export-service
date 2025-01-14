@@ -8,7 +8,12 @@ import { withTask } from './support/task';
 import { createArchive } from './db/archive';
 import multer, { FileFilterCallback } from 'multer';
 import path from 'node:path';
-import { unzip, validateRelationships } from './actions/import';
+import {
+  importResources,
+  unzip,
+  validateRelationships,
+} from './actions/import';
+import { unwrap } from './utils/option';
 
 const router = Router();
 interface ParsedExportBody {
@@ -112,13 +117,32 @@ const fileFilter = (
 
 const upload = multer({ storage: multer.memoryStorage(), fileFilter });
 
-router.post('/import', upload.single('file'), async function (req, res, next) {
-  const file = req.file!;
+// Workaround to https://github.com/expressjs/multer/issues/814
+const uploadMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await new Promise<void>((resolve, reject) => {
+      upload.single('file')(req, res, (error: unknown) => {
+        if (error) return reject(error);
+
+        return resolve();
+      });
+    });
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.post('/import', uploadMiddleware, async function (req, res, next) {
+  const file = unwrap(req.file);
   await withTask(async () => {
     const serialization = unzip(file.buffer);
     validateRelationships(serialization);
-    // TODO: Check if we want to keep the linked-list repr or not
-    // await importResources(serialization);
+    await importResources(serialization);
     return;
   })(req, res, next);
 });
