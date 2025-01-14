@@ -8,7 +8,6 @@ export const EditorDocumentSchema = z.object({
   context: z.string().optional(),
   createdOn: z.coerce.date(),
   updatedOn: z.coerce.date(),
-  previousVersionUri: z.string().optional(),
   documentContainerUri: z.string(),
 });
 

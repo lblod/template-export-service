@@ -33,7 +33,6 @@ export async function findEditorDocument(uri: string) {
         ?createdOn 
         ?updatedOn
         ?documentContainerUri
-        ?previousVersionUri
 
       WHERE {
         ?uri 
@@ -48,9 +47,7 @@ export async function findEditorDocument(uri: string) {
         OPTIONAL {
           ?uri ext:editorDocumentContext ?context.
         }
-        OPTIONAL {
-          ?uri pav:previousVersion ?previousVersionUri.
-        }
+
         FILTER(?uri = ${sparqlEscapeUri(uri)})
       }`);
   if (!response.results.bindings.length) {
@@ -110,9 +107,7 @@ export async function persistEditorDocument(document: EditorDocument) {
         pav:createdOn ?createdOn;
         pav:lastUpdateOn ?updatedOn;
         ^pav:hasVersion ?documentContainerUri.
-
       ?uri ext:editorDocumentContext ?context.
-      ?uri pav:previousVersion ?previousVersionUri.
     }
     WHERE {
       ?uri 
@@ -124,7 +119,6 @@ export async function persistEditorDocument(document: EditorDocument) {
         pav:lastUpdateOn ?updatedOn;
         ^pav:hasVersion ?documentContainerUri.
       OPTIONAL { ?uri ext:editorDocumentContext ?context. }
-      OPTIONAL { ?uri pav:previousVersion ?previousVersionUri. }
 
       FILTER(?uri = ${sparqlEscapeUri(uri)})
     };
@@ -137,11 +131,6 @@ export async function persistEditorDocument(document: EditorDocument) {
           pav:createdOn ${sparqlEscapeDateTime(document.createdOn)};
           pav:lastUpdateOn ${sparqlEscapeDateTime(document.updatedOn)};
           ^pav:hasVersion ${sparqlEscapeUri(document.documentContainerUri)}.
-      ${
-        document.previousVersionUri
-          ? `${sparqlEscapeUri(uri)} pav:hasPreviousVersion ${sparqlEscapeUri(document.previousVersionUri)}`
-          : ''
-      }
       ${
         document.context
           ? `${sparqlEscapeUri(uri)} ext:editorDocumentContext ${sparqlEscapeString(document.context)}`

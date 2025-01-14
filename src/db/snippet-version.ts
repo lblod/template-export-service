@@ -34,7 +34,6 @@ export async function findSnippetVersion(uri: string) {
         ?createdOn
         ?validThrough
         ?snippetUri
-        ?previousVersionUri
       WHERE {
         ?uri 
           a say:SnippetVersion;
@@ -46,9 +45,6 @@ export async function findSnippetVersion(uri: string) {
         
         OPTIONAL {
           ?uri schema:validThrough ?validThrough.
-        }
-        OPTIONAL {
-          ?uri pav:previousVersion ?previousVersionUri.
         }
         FILTER(?uri = ${sparqlEscapeUri(uri)})
       }`);
@@ -107,7 +103,6 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         pav:createdOn ?createdOn;
         ^pav:hasVersion ?snippetUri.
       ?uri schema:validThrough ?validThrough.
-      ?uri pav:previousVersion ?previousVersionUri.
     }
     WHERE {
       ?uri 
@@ -118,7 +113,6 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         pav:createdOn ?createdOn;
         ^pav:hasVersion ?snippetUri.
       OPTIONAL { ?uri schema:validThrough ?validThrough. }
-      OPTIONAL { ?uri pav:previousVersion ?previousVersionUri. }
 
       FILTER(?uri = ${sparqlEscapeUri(snippetVersion.uri)})
     };
@@ -134,11 +128,6 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
       ${
         snippetVersion.validThrough
           ? `${sparqlEscapeUri(snippetVersion.uri)} schema:position ${sparqlEscapeDateTime(snippetVersion.validThrough)}`
-          : ''
-      }
-      ${
-        snippetVersion.previousVersionUri
-          ? `${sparqlEscapeUri(snippetVersion.uri)} pav:previousVersion ${sparqlEscapeUri(snippetVersion.previousVersionUri)}`
           : ''
       }
     }`);
