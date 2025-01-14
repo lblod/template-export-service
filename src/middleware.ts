@@ -39,13 +39,14 @@ export const errorHandler = (error: Error, res?: Response) => {
     } else {
       logger.error('Process not ending in development mode');
     }
-  }
-  logger.error('Handling operational error: ', error);
-  if (res && !res.headersSent) {
-    const statusCode =
-      error instanceof AppError && error.statusCode
-        ? error.statusCode
-        : StatusCodes.INTERNAL_SERVER_ERROR;
-    res.status(statusCode).json({ errors: [{ title: error.message }] });
+  } else {
+    logger.error('Handling operational error: ', error);
+    if (res && !res.headersSent) {
+      const statusCode =
+        error instanceof AppError && error.statusCode
+          ? error.statusCode
+          : StatusCodes.INTERNAL_SERVER_ERROR;
+      res.status(statusCode).json({ errors: [{ title: error.message }] });
+    }
   }
 };
