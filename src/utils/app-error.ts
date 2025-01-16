@@ -1,3 +1,5 @@
+import { MulterError } from 'multer';
+
 export default class AppError extends Error {
   statusCode?: number;
   isOperational: boolean;
@@ -21,6 +23,7 @@ export function isError(obj: unknown) {
 export function isOperational(error: Error) {
   return (
     (error instanceof AppError && error.isOperational) ||
-    ('expose' in error && error.expose === true)
+    ('expose' in error && error.expose === true) ||
+    error instanceof MulterError
   );
 }
