@@ -8,6 +8,7 @@ export const SnippetListSchema = z.object({
   createdOn: z.coerce.date(),
   snippetUris: coercedSet(z.string()),
   importedResourceUris: coercedSet(z.string()),
+  publisherUri: z.string().optional(),
 });
 
 // Thanks to coersion the input type differs, but the `z.input` helper doesn't handle this

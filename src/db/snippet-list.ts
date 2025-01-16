@@ -24,11 +24,13 @@ export async function findSnippetList(uri: string) {
       PREFIX pav: <http://purl.org/pav/>
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       PREFIX say: <https://say.data.gift/ns/>
+      PREFIX dct: <http://purl.org/dc/terms/>
       SELECT 
         ?uri 
         ?id 
         ?label 
         ?createdOn 
+        ?publisherUri
         (GROUP_CONCAT(DISTINCT ?importedResourceUri;SEPARATOR="|") AS ?importedResourceUris)
         (GROUP_CONCAT(DISTINCT ?snippetUri;SEPARATOR="|") AS ?snippetUris)
       WHERE {
@@ -43,9 +45,12 @@ export async function findSnippetList(uri: string) {
         OPTIONAL {
           ?uri say:snippetImportedResource ?importedResourceUri.
         }
+        OPTIONAL {
+          ?uri dct:publisher ?publisherUri.
+        }
         FILTER(?uri = ${sparqlEscapeUri(uri)})
       }
-      GROUP BY ?uri ?id ?label ?createdOn`);
+      GROUP BY ?uri ?id ?label ?createdOn ?publisherUri`);
   if (!response.results.bindings.length) {
     return null;
   }
@@ -99,6 +104,7 @@ export async function persistSnippetList(snippetList: SnippetList) {
     PREFIX pav: <http://purl.org/pav/>
     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
     PREFIX say: <https://say.data.gift/ns/>
+    PREFIX dct: <http://purl.org/dc/terms/>
     DELETE {
       ?uri 
         a say:SnippetList;
@@ -107,6 +113,7 @@ export async function persistSnippetList(snippetList: SnippetList) {
         pav:createdOn ?createdOn.
       ?uri say:hasSnippet ?snippetUri.
       ?uri say:snippetImportedResource ?importedResourceUri.
+      ?uri dct:publisher ?publisherUri.
     } 
     WHERE {
       ?uri 
@@ -116,6 +123,7 @@ export async function persistSnippetList(snippetList: SnippetList) {
         pav:createdOn ?createdOn.
       OPTIONAL { ?uri say:hasSnippet ?snippetUri. }
       OPTIONAL { ?uri say:snippetImportedResource ?importedResourceUri. }
+      OPTIONAL { ?uri dct:publisher ?publisherUri. }
       
       FILTER(?uri = ${sparqlEscapeUri(snippetList.uri)})
     };
@@ -125,6 +133,12 @@ export async function persistSnippetList(snippetList: SnippetList) {
         mu:uuid ${sparqlEscapeString(snippetList.id)};
         skos:prefLabel ${sparqlEscapeString(snippetList.label)};
         pav:createdOn ${sparqlEscapeDateTime(snippetList.createdOn)}.
+      
+      ${
+        snippetList.publisherUri
+          ? `${sparqlEscapeUri(snippetList.uri)} dct:publisher ${sparqlEscapeUri(snippetList.publisherUri)}.`
+          : ''
+      }
 
       ${[...snippetList.snippetUris]
         .map(

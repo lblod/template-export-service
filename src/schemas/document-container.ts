@@ -7,5 +7,6 @@ export const DocumentContainerSchema = z.object({
   currentVersionUri: z.string(),
   folderUri: z.string().optional(),
   linkedSnippetListUris: coercedSet(z.string()),
+  publisherUri: z.string().optional(),
 });
 export type DocumentContainer = z.infer<typeof DocumentContainerSchema>;

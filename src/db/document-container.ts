@@ -15,11 +15,14 @@ export async function findDocumentContainer(uri: string) {
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
       PREFIX pav: <http://purl.org/pav/>
+      PREFIX dct: <http://purl.org/dc/terms/>
+
       SELECT 
         ?uri 
         ?id 
         ?currentVersionUri 
         ?folderUri
+        ?publisherUri
         (GROUP_CONCAT(DISTINCT ?linkedSnippetListUri;SEPARATOR="|") AS ?linkedSnippetListUris)
       WHERE {
         ?uri 
@@ -33,9 +36,12 @@ export async function findDocumentContainer(uri: string) {
         OPTIONAL {
           ?uri ext:editorDocumentFolder ?folderUri.
         }
+        OPTIONAL {
+          ?uri dct:publisher ?publisherUri.
+        }
         FILTER(?uri = ${sparqlEscapeUri(uri)})
       }
-      GROUP BY ?uri ?id ?folderUri ?currentVersionUri
+      GROUP BY ?uri ?id ?folderUri ?currentVersionUri ?publisherUri
       `);
   if (!response.results.bindings.length) {
     return null;
@@ -72,6 +78,7 @@ export async function persistDocumentContainer(container: DocumentContainer) {
     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
     PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
     PREFIX pav: <http://purl.org/pav/>
+    PREFIX dct: <http://purl.org/dc/terms/>
 
     DELETE {
       ?uri
@@ -79,6 +86,7 @@ export async function persistDocumentContainer(container: DocumentContainer) {
         mu:uuid ?id;
         pav:hasCurrentVersion ?currentVersionUri.
       ?uri ext:editorDocumentFolder ?folderUri.
+      ?uri dct:publisher ?publisherUri.
     }
     WHERE {
       ?uri
@@ -86,7 +94,7 @@ export async function persistDocumentContainer(container: DocumentContainer) {
         mu:uuid ?id;
         pav:hasCurrentVersion ?currentVersionUri.
       OPTIONAL { ?uri ext:editorDocumentFolder ?folderUri. }
-
+      OPTIONAL { ?uri dct:publisher ?publisherUri. }
       FILTER(?uri = ${sparqlEscapeUri(container.uri)})
     };
     INSERT DATA {
@@ -96,7 +104,12 @@ export async function persistDocumentContainer(container: DocumentContainer) {
           pav:hasCurrentVersion ${sparqlEscapeUri(container.currentVersionUri)}.
       ${
         container.folderUri
-          ? `${sparqlEscapeUri(container.uri)} ext:editorDocumentFolder ${sparqlEscapeUri(container.folderUri)}`
+          ? `${sparqlEscapeUri(container.uri)} ext:editorDocumentFolder ${sparqlEscapeUri(container.folderUri)}.`
+          : ''
+      }
+      ${
+        container.publisherUri
+          ? `${sparqlEscapeUri(container.uri)} dct:publisher ${sparqlEscapeUri(container.publisherUri)}.`
           : ''
       }
     }
