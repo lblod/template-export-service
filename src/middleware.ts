@@ -35,6 +35,9 @@ export const errorHandler = (error: Error, res?: Response) => {
       res.status(500).json({ errors: [{ title: 'An unknown error occured' }] });
     }
     if (process.env.NODE_ENV === 'production') {
+      // TODO: find a way to more gracefully exit the service
+      // e.g. https://expressjs.com/en/advanced/healthcheck-graceful-shutdown.html,
+      // https://nodejs.org/api/http.html#serverclosecallback
       process.exit(1);
     } else {
       logger.error('Process not ending in development mode');
