@@ -70,7 +70,7 @@ export function validateRelationships(serialization: Serialization) {
 
 function validateDocumentContainerRelationships(serialization: Serialization) {
   const { documentContainers, editorDocuments, snippetLists } = serialization;
-  if (documentContainers.length != editorDocuments.length) {
+  if (documentContainers.length !== editorDocuments.length) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
       'Expected the same number of DocumentContainer resources as EditorDocument resources in the uploaded zip archive'
@@ -86,7 +86,7 @@ function validateDocumentContainerRelationships(serialization: Serialization) {
         `EditorDocument ${container.currentVersionUri} not found in the uploaded zip archive`
       );
     }
-    if (currentVersion.documentContainerUri != container.uri) {
+    if (currentVersion.documentContainerUri !== container.uri) {
       throw new AppError(
         StatusCodes.BAD_REQUEST,
         `DocumentContainer ${currentVersion.documentContainerUri} not found in the uploaded zip archive`
@@ -110,7 +110,7 @@ function validateSnippetListRelationships(serialization: Serialization) {
   const { snippetLists, snippets } = serialization;
   for (const list of snippetLists) {
     for (const snippetUri of list.snippetUris) {
-      const snippet = snippets.find((snippet) => (snippet.uri = snippetUri));
+      const snippet = snippets.find((snippet) => snippet.uri === snippetUri);
       if (!snippet) {
         throw new AppError(
           StatusCodes.BAD_REQUEST,
@@ -123,7 +123,7 @@ function validateSnippetListRelationships(serialization: Serialization) {
 
 function validateSnippetRelationships(serialization: Serialization) {
   const { snippets, snippetVersions, snippetLists } = serialization;
-  if (snippets.length != snippetVersions.length) {
+  if (snippets.length !== snippetVersions.length) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
       'Expected the same number of Snippet resources as SnippetVersion resources in the uploaded zip archive'
@@ -131,7 +131,7 @@ function validateSnippetRelationships(serialization: Serialization) {
   }
   for (const snippet of snippets) {
     const currentVersion = snippetVersions.find(
-      (doc) => doc.uri === snippet.currentVersionUri
+      (version) => version.uri === snippet.currentVersionUri
     );
     if (!currentVersion) {
       throw new AppError(
@@ -139,7 +139,7 @@ function validateSnippetRelationships(serialization: Serialization) {
         `SnippetVersion ${snippet.currentVersionUri} not found in the uploaded zip archive`
       );
     }
-    if (currentVersion.snippetUri != snippet.uri) {
+    if (currentVersion.snippetUri !== snippet.uri) {
       throw new AppError(
         StatusCodes.BAD_REQUEST,
         `Snippet ${currentVersion.snippetUri} not found in the uploaded zip archive`
