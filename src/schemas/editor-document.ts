@@ -5,6 +5,7 @@ export const EditorDocumentSchema = z.object({
   uri: z.string(),
   title: z.string(),
   content: z.string(),
+  templateVersion: z.string().optional(),
   context: z.string().optional(),
   createdOn: z.coerce.date(),
   updatedOn: z.coerce.date(),
