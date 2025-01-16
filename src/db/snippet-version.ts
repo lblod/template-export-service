@@ -130,7 +130,7 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
       
       ${
         snippetVersion.validThrough
-          ? `${sparqlEscapeUri(snippetVersion.uri)} schema:position ${sparqlEscapeDateTime(snippetVersion.validThrough)}.`
+          ? `${sparqlEscapeUri(snippetVersion.uri)} schema:validThrough ${sparqlEscapeDateTime(snippetVersion.validThrough)}.`
           : ''
       }
     }`);
