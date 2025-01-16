@@ -6,4 +6,6 @@ export enum JOB_STATUSES {
   CANCELED = 'http://redpencil.data.gift/id/concept/JobStatus/canceled',
 }
 
+// TODO: make this configurable through an environment variable
 export const ALLOWED_USER_GROUPS = ['org-wf'];
+export const MAXIMUM_FILE_UPLOAD_SIZE = 10000000; //10 MB

@@ -14,6 +14,7 @@ import {
   validateRelationships,
 } from './actions/import';
 import { unwrap } from './utils/option';
+import { MAXIMUM_FILE_UPLOAD_SIZE } from './constants';
 
 const router = Router();
 interface ParsedExportBody {
@@ -115,7 +116,13 @@ const fileFilter = (
   }
 };
 
-const upload = multer({ storage: multer.memoryStorage(), fileFilter });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: {
+    fileSize: MAXIMUM_FILE_UPLOAD_SIZE,
+  },
+});
 
 // Workaround to https://github.com/expressjs/multer/issues/814
 const uploadMiddleware = async (
