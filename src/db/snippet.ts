@@ -1,5 +1,6 @@
 import {
   query,
+  sparqlEscapeDateTime,
   sparqlEscapeInt,
   sparqlEscapeString,
   sparqlEscapeUri,
@@ -120,16 +121,16 @@ export async function persistSnippet(snippet: Snippet) {
       ${sparqlEscapeUri(snippet.uri)} 
         a say:Snippet;
         mu:uuid ${sparqlEscapeString(snippet.id)};
-        pav:createdOn ?createdOn;
-        pav:lastUpdateOn ?updatedOn;
-        pav:hasCurrentVersion ?currentVersionUri.
-
+        pav:createdOn ${sparqlEscapeDateTime(snippet.createdOn)};
+        pav:lastUpdateOn ${sparqlEscapeDateTime(snippet.updatedOn)};
+        pav:hasCurrentVersion ${sparqlEscapeUri(snippet.currentVersionUri)}.
+  
       ${
         snippet.position
-          ? `${sparqlEscapeUri(snippet.uri)} schema:position ${sparqlEscapeInt(snippet.position)}`
+          ? `${sparqlEscapeUri(snippet.uri)} schema:position ${sparqlEscapeInt(snippet.position)}.`
           : ''
       }
-
+  
       ${[...snippet.linkedSnippetListUris]
         .map(
           (snippetListUri) =>

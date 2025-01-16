@@ -94,6 +94,8 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
     PREFIX dct: <http://purl.org/dc/terms/>
     PREFIX schema: <http://schema.org/>
     PREFIX say: <https://say.data.gift/ns/>
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+  
     DELETE {
       ?uri 
         a say:SnippetVersion;
@@ -113,7 +115,7 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         pav:createdOn ?createdOn;
         ^pav:hasVersion ?snippetUri.
       OPTIONAL { ?uri schema:validThrough ?validThrough. }
-
+  
       FILTER(?uri = ${sparqlEscapeUri(snippetVersion.uri)})
     };
     INSERT DATA {
@@ -123,13 +125,12 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         dct:title ${sparqlEscapeString(snippetVersion.title)};
         ext:editorDocumentContent ${sparqlEscapeString(snippetVersion.content)};
         pav:createdOn ${sparqlEscapeDateTime(snippetVersion.createdOn)}.
-      
-      ${sparqlEscapeUri(snippetVersion.snippetUri)}
-        pav:hasVersion ${sparqlEscapeUri(snippetVersion.uri)}.
+  
+      ${sparqlEscapeUri(snippetVersion.snippetUri)} pav:hasVersion ${sparqlEscapeUri(snippetVersion.uri)}.
       
       ${
         snippetVersion.validThrough
-          ? `${sparqlEscapeUri(snippetVersion.uri)} schema:position ${sparqlEscapeDateTime(snippetVersion.validThrough)}`
+          ? `${sparqlEscapeUri(snippetVersion.uri)} schema:position ${sparqlEscapeDateTime(snippetVersion.validThrough)}.`
           : ''
       }
     }`);
