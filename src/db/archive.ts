@@ -10,10 +10,11 @@ export async function createArchive(data: Optional<Archive, 'id' | 'uri'>) {
         PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
         PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
         INSERT DATA {
-          ${sparqlEscapeUri(uri)} 
+          ${sparqlEscapeUri(uri)}
+            a nfo:DataContainer; 
             a nfo:Archive;
-              mu:uuid ${sparqlEscapeString(id)};
-              task:hasFile ${sparqlEscapeUri(data.fileUri)}.
+            mu:uuid ${sparqlEscapeString(id)};
+            task:hasFile ${sparqlEscapeUri(data.fileUri)}.
         }`);
   return {
     ...data,
