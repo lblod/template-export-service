@@ -137,7 +137,9 @@ export async function persistEditorDocument(document: EditorDocument) {
         pav:createdOn ${sparqlEscapeDateTime(document.createdOn)};
         pav:lastUpdateOn ${sparqlEscapeDateTime(document.updatedOn)}.
       
-      ${sparqlEscapeUri(document.documentContainerUri)} pav:hasVersion ${sparqlEscapeUri(uri)}.
+      ${sparqlEscapeUri(document.documentContainerUri)}
+        a ext:DocumentContainer;
+        pav:hasVersion ${sparqlEscapeUri(uri)}.
 
       ${
         document.context

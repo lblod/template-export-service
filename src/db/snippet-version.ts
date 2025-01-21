@@ -126,7 +126,9 @@ export async function persistSnippetVersion(snippetVersion: SnippetVersion) {
         ext:editorDocumentContent ${sparqlEscapeString(snippetVersion.content)};
         pav:createdOn ${sparqlEscapeDateTime(snippetVersion.createdOn)}.
   
-      ${sparqlEscapeUri(snippetVersion.snippetUri)} pav:hasVersion ${sparqlEscapeUri(snippetVersion.uri)}.
+      ${sparqlEscapeUri(snippetVersion.snippetUri)}
+        a say:Snippet;
+        pav:hasVersion ${sparqlEscapeUri(snippetVersion.uri)}.
       
       ${
         snippetVersion.validThrough
