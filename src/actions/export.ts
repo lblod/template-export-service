@@ -14,6 +14,7 @@ import { createLogicalFile, createPhysicalFile } from '../db/file';
 import { Serialization } from '../schemas/serialization';
 import { findSnippetListOrFail, findSnippets } from '../db/snippet-list';
 import { findCurrentVersion as findCurrentSnippetVersion } from '../db/snippet';
+import { format } from 'date-fns';
 
 export async function collectResourcesToExport({
   documentContainerUris,
@@ -79,7 +80,8 @@ export async function createZip(serialization: Serialization) {
       );
     });
   });
-  const name = `template-export-${uuid()}.zip`;
+  const now = format(new Date(), 'yyyyMMddhhmmss');
+  const name = `template-export-${now}-${uuid()}.zip`;
   const path = `/share/${name}`;
   await zip.writeZipPromise(path);
   const stats = await stat(path);
