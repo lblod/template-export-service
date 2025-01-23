@@ -1,6 +1,6 @@
 {
   "name": "@lblod/template-export-service",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Microservice which allows for exporting and importing say-editor templates and snippets",
   "main": "app.js",
   "scripts": {
