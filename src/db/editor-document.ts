@@ -17,7 +17,10 @@ import {
 import { Optional } from '../utils/types';
 import { expect } from '../utils/option';
 
-export async function findEditorDocument(uri: string) {
+export async function findEditorDocument(
+  uri: string,
+  acceptMultiple?: boolean
+) {
   const response = await query<EditorDocument>(/* sparql */ `
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -57,7 +60,7 @@ export async function findEditorDocument(uri: string) {
   if (!response.results.bindings.length) {
     return null;
   }
-  if (response.results.bindings.length > 1) {
+  if (!acceptMultiple && response.results.bindings.length > 1) {
     throw new AppError(
       StatusCodes.CONFLICT,
       `Expected to only find a single result when querying EditorDocument ${uri} `
@@ -69,8 +72,11 @@ export async function findEditorDocument(uri: string) {
   return EditorDocumentSchema.parse(editorDocument);
 }
 
-export async function findEditorDocumentOrFail(uri: string) {
-  const editorDocument = await findEditorDocument(uri);
+export async function findEditorDocumentOrFail(
+  uri: string,
+  acceptMultiple?: boolean
+) {
+  const editorDocument = await findEditorDocument(uri, acceptMultiple);
   return expect(
     editorDocument,
     new AppError(

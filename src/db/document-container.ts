@@ -131,6 +131,12 @@ export async function createDocumentContainer(
   return container;
 }
 
-export async function findCurrentVersion(documentContainer: DocumentContainer) {
-  return findEditorDocumentOrFail(documentContainer.currentVersionUri);
+export async function findCurrentVersion(
+  documentContainer: DocumentContainer,
+  acceptMultiple?: boolean
+) {
+  return findEditorDocumentOrFail(
+    documentContainer.currentVersionUri,
+    acceptMultiple
+  );
 }
