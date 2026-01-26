@@ -175,10 +175,9 @@ async function importDocumentContainers(serialization: Serialization) {
       await persistEditorDocument(currentVersion);
       const documentContainerInDB = await findDocumentContainer(container.uri);
       const currentVersionInDB = documentContainerInDB
-        ? await findCurrentVersion_DocumentContainer(
-            documentContainerInDB,
-            true
-          )
+        ? await findCurrentVersion_DocumentContainer(documentContainerInDB, [
+            'uri',
+          ])
         : null;
       if (
         !currentVersionInDB ||
