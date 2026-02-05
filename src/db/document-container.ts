@@ -9,6 +9,7 @@ import { objectify } from '../utils/sparql';
 import { Optional } from '../utils/types';
 import { findEditorDocumentOrFail } from './editor-document';
 import { expect } from '../utils/option';
+import { EditorDocument } from '../schemas/editor-document';
 
 export async function findDocumentContainer(uri: string) {
   const response = await query<DocumentContainer>(/* sparql */ `
@@ -131,6 +132,12 @@ export async function createDocumentContainer(
   return container;
 }
 
-export async function findCurrentVersion(documentContainer: DocumentContainer) {
-  return findEditorDocumentOrFail(documentContainer.currentVersionUri);
+export async function findCurrentVersion(
+  documentContainer: DocumentContainer,
+  assertUniquenessOf?: (keyof EditorDocument)[]
+) {
+  return findEditorDocumentOrFail(
+    documentContainer.currentVersionUri,
+    assertUniquenessOf
+  );
 }

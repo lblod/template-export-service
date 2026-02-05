@@ -27,7 +27,7 @@ export async function collectResourcesToExport({
     documentContainerUris.map(findDocumentContainerOrFail)
   );
   const editorDocuments = await Promise.all(
-    documentContainers.map(findCurrentDocumentContainerVersion)
+    documentContainers.map((dc) => findCurrentDocumentContainerVersion(dc))
   );
   const snippetLists: SnippetList[] = [];
   const snippets: Snippet[] = [];

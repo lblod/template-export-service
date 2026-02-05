@@ -17,7 +17,12 @@ import {
 import { Optional } from '../utils/types';
 import { expect } from '../utils/option';
 
-export async function findEditorDocument(uri: string) {
+export async function findEditorDocument(
+  uri: string,
+  /** Which fields can there not be multiple values for, errors if multiples are found. Defaults to
+   * all fields if nothing passed */
+  assertUniquenessOf?: (keyof EditorDocument)[]
+) {
   const response = await query<EditorDocument>(/* sparql */ `
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -54,23 +59,35 @@ export async function findEditorDocument(uri: string) {
 
         FILTER(?uri = ${sparqlEscapeUri(uri)})
       }`);
-  if (!response.results.bindings.length) {
+  const bindings = response.results.bindings;
+  if (!bindings.length) {
     return null;
   }
-  if (response.results.bindings.length > 1) {
-    throw new AppError(
-      StatusCodes.CONFLICT,
-      `Expected to only find a single result when querying EditorDocument ${uri} `
-    );
+  if (bindings.length > 1) {
+    if (
+      !assertUniquenessOf ||
+      assertUniquenessOf.some((uniqueField) => {
+        const values = new Set(
+          bindings.map((bind) => bind[uniqueField]?.value)
+        );
+        return values.size > 1;
+      })
+    ) {
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        `Expected to only find a single result when querying EditorDocument ${uri} `
+      );
+    }
   }
-  const editorDocument: EditorDocumentInput = objectify(
-    response.results.bindings[0]
-  );
+  const editorDocument: EditorDocumentInput = objectify(bindings[0]);
   return EditorDocumentSchema.parse(editorDocument);
 }
 
-export async function findEditorDocumentOrFail(uri: string) {
-  const editorDocument = await findEditorDocument(uri);
+export async function findEditorDocumentOrFail(
+  uri: string,
+  assertUniquenessOf?: (keyof EditorDocument)[]
+) {
+  const editorDocument = await findEditorDocument(uri, assertUniquenessOf);
   return expect(
     editorDocument,
     new AppError(
