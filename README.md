@@ -1,5 +1,5 @@
 # template-export-service
-Microservice which allows for exporting and importing say-editor templates and snippets
+Microservice which allows for exporting and importing say-editor templates and snippets.
 
 ## Installation
 Add this service to your docker-compose stack:
