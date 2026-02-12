@@ -1,5 +1,11 @@
 # @lblod/template-export-service
 
+## 1.0.1
+
+### Patch Changes
+
+- [#4](https://github.com/lblod/template-export-service/pull/4) [`1b6cc69`](https://github.com/lblod/template-export-service/commit/1b6cc69dd0a55c0db6e954872898c1b3fb28f765) Thanks [@piemonkey](https://github.com/piemonkey)! - Add workaround for duplicate editor-documents when importing templates
+
 ## 1.0.0
 
 ### Major Changes
