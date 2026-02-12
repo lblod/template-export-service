@@ -7,7 +7,10 @@ steps:
       platforms: linux/amd64
       # Can enable arm64 when moving to mu-javascript-template version >1.8
       # platforms: linux/amd64, linux/arm64
-    secrets: [ docker_username, docker_password ]
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
 when:
   event: tag
   ref: refs/tags/v*
